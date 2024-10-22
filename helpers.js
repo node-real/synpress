@@ -88,7 +88,7 @@ module.exports = {
     addedNetworks.push(newNetwork);
   },
   // check if network is already added to metamask
-  async qcheckNetworkAdded(network) {
+  async checkNetworkAdded(network) {
     log('[checkNetworkAdded] Checking if network is already added', network);
     if (addedNetworks.includes(network)) {
       log(`[checkNetworkAdded] Network is present`);
