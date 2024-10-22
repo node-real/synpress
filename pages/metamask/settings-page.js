@@ -71,6 +71,8 @@ const addNetworkButton = '.networks-tab__body button';
 module.exports.networksPageElements = { addNetworkButton };
 
 const addNetworkForm = '.networks-tab__add-network-form-body';
+// const addNetworkForm = '.multichain-network-list-menu-content-wrapper__dialog';
+
 const networkNameInput = `${addNetworkForm} [data-testid="network-form-network-name"]`;
 const rpcUrlInput = `${addNetworkForm} [data-testid="network-form-rpc-url"]`;
 const chainIdInput = `${addNetworkForm} [data-testid="network-form-chain-id"]`;

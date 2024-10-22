@@ -2,6 +2,7 @@ const helpers = require('../helpers');
 const playwright = require('../commands/playwright');
 const metamask = require('../commands/metamask');
 const etherscan = require('../commands/etherscan');
+const Promise = require("eslint-plugin-promise/rules/lib/promise-statics");
 
 /**
  * @type {Cypress.PluginConfig}
@@ -77,6 +78,9 @@ module.exports = (on, config) => {
         network = 'goerli';
       }
       return await metamask.changeNetwork(network);
+    },
+    checkNetworkAdded: async network => {
+      return await metamask.checkNetworkAdded(network);
     },
     activateAdvancedGasControlInMetamask: metamask.activateAdvancedGasControl,
     activateShowHexDataInMetamask: metamask.activateShowHexData,

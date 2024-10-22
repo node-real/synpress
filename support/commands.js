@@ -52,7 +52,10 @@ Cypress.Commands.add('metamaskScreenshot', path => {
 Cypress.Commands.add('changeMetamaskNetwork', network => {
   return cy.task('changeMetamaskNetwork', network);
 });
-
+// check if network is available in presets
+Cypress.Commands.add('checkNetworkAdded', network => {
+  return cy.task('checkNetworkAdded', network);
+});
 Cypress.Commands.add('importMetamaskAccount', privateKey => {
   return cy.task('importMetamaskAccount', privateKey);
 });

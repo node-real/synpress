@@ -516,6 +516,9 @@ const metamask = {
     await switchToCypressIfNotActive();
     return true;
   },
+  async checkNetworkAdded(network) {
+    return await checkNetworkAdded(network);
+  },
   async addNetwork(network) {
     // check if available in presets
     if (typeof network === 'string') {
@@ -1587,13 +1590,18 @@ const metamask = {
       txObj.toAccount,
     );
 
-    await playwright.waitAndClick(
-      mainPageElements.popup.sendPopup.selectTokenButton,
+    const text = await playwright.waitAndGetElementInnerText(
+      mainPageElements.popup.sendPopup.currentTokenName,
     );
-    await playwright.waitAndClickByText(
-      mainPageElements.popup.sendPopup.tokenName,
-      txObj.tokenName,
-    );
+    if (text != txObj.tokenName) {
+      await playwright.waitAndClick(
+        mainPageElements.popup.sendPopup.selectTokenButton,
+      );
+      await playwright.waitAndClickByText(
+        mainPageElements.popup.sendPopup.tokenName,
+        txObj.tokenName,
+      );
+    }
 
     await playwright.waitAndType(
       mainPageElements.popup.sendPopup.currencyInput,

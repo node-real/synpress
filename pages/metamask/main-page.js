@@ -48,6 +48,7 @@ const popup = {
   sendPopup: {
     currencyInput: '[data-testid="currency-input"]',
     toInput: '[data-testid="ens-input"]',
+    currentTokenName: '.asset-picker__symbol',
     continueButton: '.multichain-send-page__nav-button button',
     confirmButton: '[data-testid="page-container-footer-next"]',
     container: sendPopupSelector,
@@ -137,7 +138,7 @@ const createAccount = {
 const importTokenFormSelector = '.import-tokens-modal__modal-dialog-content';
 const importToken = {
   form: importTokenFormSelector,
-  tokenTab: '[data-testid="home__asset-tab"]',
+  tokenTab: '[data-testid="account-overview__asset-tab"]',
   button: '[data-testid="import-token-button"]',
   tokenContractAddressInput: `${importTokenFormSelector} [data-testid="import-tokens-modal-custom-address"]`,
   tokenSymbolInput: `${importTokenFormSelector} [data-testid="import-tokens-modal-custom-symbol"]`,

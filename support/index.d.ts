@@ -85,6 +85,15 @@ declare namespace Cypress {
           },
     ): Chainable<boolean>;
     /**
+     * Check if network is added in metamask
+     * @example
+     * cy.checkNetworkAdded('optimism')
+     */
+    checkNetworkAdded(
+        network:
+            | string,
+    ): Chainable<boolean>;
+    /**
      * Change network in metamask (if network is not present, it will be added)
      * List of available presets for networks: https://github.com/wagmi-dev/references/tree/main/packages/chains#chains
      * If preset for your custom chain is not available, you can add custom network by yourself with `cy.addMetamaskNetwork()`.

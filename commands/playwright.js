@@ -278,6 +278,15 @@ module.exports = {
     const value = await element.inputValue();
     return value;
   },
+  async waitAndGetElementInnerText(selector, page = metamaskWindow) {
+    const expect = expectInstance
+      ? expectInstance
+      : require('@playwright/test').expect;
+    const element = await module.exports.waitFor(selector, page);
+    await expect(element).toHaveText(/[a-zA-Z1-9]/);
+    const value = await element.innerText();
+    return value;
+  },
   async waitAndGetAttributeValue(
     selector,
     attribute,
