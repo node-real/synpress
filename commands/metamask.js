@@ -572,10 +572,16 @@ const metamask = {
       network.name,
     );
 
+    await playwright.waitAndClick(addNetworkPageElements.addRpcUrlDropDown);
+    await playwright.waitAndClick(addNetworkPageElements.addRpcUrlButton);
     await playwright.waitAndType(
-      addNetworkPageElements.rpcUrlInput,
+      addNetworkPageElements.addRpcUrlInput,
       network.rpcUrls.default.http[0],
     );
+    await playwright.waitAndClick(
+      addNetworkPageElements.addRpcUrlConfirmButton,
+    );
+
     await playwright.waitAndType(
       addNetworkPageElements.chainIdInput,
       network.id,
@@ -585,10 +591,23 @@ const metamask = {
       network.nativeCurrency.symbol,
     );
     if (network.blockExplorer) {
-      await playwright.waitAndType(
-        addNetworkPageElements.blockExplorerInput,
-        network.blockExplorers.default.url,
+      await playwright.waitAndClick(
+        addNetworkPageElements.addExplorerUrlDropDown,
       );
+      await playwright.waitAndClick(
+        addNetworkPageElements.addExplorerUrlButton,
+      );
+      await playwright.waitAndType(
+        addNetworkPageElements.addExplorerUrlInput,
+        network.rpcUrls.default.http[0],
+      );
+      await playwright.waitAndClick(
+        addNetworkPageElements.addExplorerUrlConfirmButton,
+      );
+      // await playwright.waitAndType(
+      //   addNetworkPageElements.blockExplorerInput,
+      //   network.blockExplorers.default.url,
+      // );
     }
     await playwright.waitAndClick(
       addNetworkPageElements.saveButton,

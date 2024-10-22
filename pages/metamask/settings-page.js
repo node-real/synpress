@@ -74,19 +74,38 @@ module.exports.networksPageElements = { addNetworkButton };
 const addNetworkForm = '.multichain-network-list-menu-content-wrapper__dialog';
 
 const networkNameInput = `${addNetworkForm} [data-testid="network-form-network-name"]`;
-const rpcUrlInput = `${addNetworkForm} [data-testid="network-form-rpc-url"]`;
+
+const addRpcUrlDropDown = `${addNetworkForm} [data-testid="test-add-rpc-drop-down"]`;
+const addRpcUrlButton = `${addNetworkForm} .dropdown-editor__item button`;
+const addRpcUrlInput = `[data-testid="rpc-url-input-test"]`;
+const addRpcUrlConfirmButton = `.add-rpc-modal__footer button`;
+// const rpcUrlInput = `${addNetworkForm} [data-testid="network-form-rpc-url"]`;
 const chainIdInput = `${addNetworkForm} [data-testid="network-form-chain-id"]`;
 const symbolInput = `${addNetworkForm} [data-testid="network-form-ticker-input"]`;
-const blockExplorerInput = `${addNetworkForm} [data-testid="network-form-block-explorer-url"]`;
+
+const addExplorerUrlDropDown = `${addNetworkForm} [data-testid="test-add-explorer-drop-down"]`;
+const addExplorerUrlButton = `${addNetworkForm} .dropdown-editor__item button`;
+const addExplorerUrlInput = `[data-testid="explorer-url-input"]`;
+const addExplorerUrlConfirmButton = `.add-block-explorer-modal__footer button`;
+
+// const blockExplorerInput = `${addNetworkForm} [data-testid="network-form-block-explorer-url"]`;
 const saveButton = '.networks-tab__add-network-form-footer .btn-primary';
 const switchButton = '.home__new-network-added__switch-to-button';
 module.exports.addNetworkPageElements = {
   addNetworkForm,
   networkNameInput,
-  rpcUrlInput,
+  addRpcUrlDropDown,
+  addRpcUrlButton,
+  addRpcUrlInput,
+  addRpcUrlConfirmButton,
+  // rpcUrlInput,
   chainIdInput,
   symbolInput,
-  blockExplorerInput,
+  // blockExplorerInput,
+  addExplorerUrlDropDown,
+  addExplorerUrlButton,
+  addExplorerUrlInput,
+  addExplorerUrlConfirmButton,
   saveButton,
   switchButton,
 };
