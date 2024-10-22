@@ -2,7 +2,6 @@ const helpers = require('../helpers');
 const playwright = require('../commands/playwright');
 const metamask = require('../commands/metamask');
 const etherscan = require('../commands/etherscan');
-const Promise = require("eslint-plugin-promise/rules/lib/promise-statics");
 
 /**
  * @type {Cypress.PluginConfig}
