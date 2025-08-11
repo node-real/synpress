@@ -58,69 +58,167 @@ module.exports = {
     return activeTabName;
   },
   async metamaskExtensionId() {
-    const metamaskExtensionData = (await module.exports.getExtensionsData())
-      .metamask;
-    return metamaskExtensionData.id;
+    try {
+      let extensionsData = await module.exports.getExtensionsData();
+      let metamaskExtensionData = extensionsData.metamask;
+      
+      if (!metamaskExtensionData) {
+        // Try to refresh extensions data once more in case of timing issues
+        log('MetaMask extension not found on first attempt, refreshing extensions data...');
+        await sleep(1000); // Wait a bit for extensions to load
+        
+        // Clear cached data and try again
+        extensionsData = {}; // Clear the global cache
+        const refreshedExtensionsData = await module.exports.getExtensionsData();
+        const refreshedMetamaskExtensionData = refreshedExtensionsData.metamask;
+        
+        if (!refreshedMetamaskExtensionData) {
+          throw new Error('MetaMask extension not found. Please ensure MetaMask is installed and enabled in the browser.');
+        }
+        
+        if (!refreshedMetamaskExtensionData.id) {
+          throw new Error('MetaMask extension ID not found. The extension may not be properly loaded.');
+        }
+        
+        return refreshedMetamaskExtensionData.id;
+      }
+      
+      if (!metamaskExtensionData.id) {
+        throw new Error('MetaMask extension ID not found. The extension may not be properly loaded.');
+      }
+      
+      return metamaskExtensionData.id;
+    } catch (error) {
+      log(`Error in metamaskExtensionId: ${error.message}`);
+      throw error;
+    }
   },
   async setExpectInstance(expect) {
     expectInstance = expect;
   },
   async init(playwrightInstance) {
-    const chromium = playwrightInstance
-      ? playwrightInstance
-      : require('@playwright/test').chromium;
-    const debuggerDetails = await fetch('http://127.0.0.1:9222/json/version'); //DevSkim: ignore DS137138
-    const debuggerDetailsConfig = await debuggerDetails.json();
-    const webSocketDebuggerUrl = debuggerDetailsConfig.webSocketDebuggerUrl;
-    if (process.env.SLOW_MODE) {
-      if (!isNaN(process.env.SLOW_MODE)) {
-        browser = await chromium.connectOverCDP(webSocketDebuggerUrl, {
-          slowMo: Number(process.env.SLOW_MODE),
-        });
-      } else {
-        browser = await chromium.connectOverCDP(webSocketDebuggerUrl, {
-          slowMo: 50,
-        });
+    try {
+      log('[init] Starting browser initialization...');
+      
+      const chromium = playwrightInstance
+        ? playwrightInstance
+        : require('@playwright/test').chromium;
+      
+      log('[init] Attempting to connect to Chrome DevTools Protocol...');
+      
+      // Try to connect to the CDP endpoint
+      let debuggerDetails;
+      try {
+        debuggerDetails = await fetch('http://127.0.0.1:9222/json/version'); //DevSkim: ignore DS137138
+        log('[init] Successfully fetched debugger details');
+      } catch (fetchError) {
+        log(`[init] Failed to fetch debugger details: ${fetchError.message}`);
+        throw new Error(`Failed to connect to Chrome DevTools Protocol at http://127.0.0.1:9222. Make sure Chrome is running with --remote-debugging-port=9222`);
       }
-    } else {
-      browser = await chromium.connectOverCDP(webSocketDebuggerUrl);
+      
+      let debuggerDetailsConfig;
+      try {
+        debuggerDetailsConfig = await debuggerDetails.json();
+        log('[init] Successfully parsed debugger details');
+      } catch (jsonError) {
+        log(`[init] Failed to parse debugger details: ${jsonError.message}`);
+        throw new Error('Failed to parse Chrome DevTools Protocol response');
+      }
+      
+      const webSocketDebuggerUrl = debuggerDetailsConfig.webSocketDebuggerUrl;
+      log(`[init] WebSocket debugger URL: ${webSocketDebuggerUrl}`);
+      
+      // Connect to the browser
+      try {
+        if (process.env.SLOW_MODE) {
+          if (!isNaN(process.env.SLOW_MODE)) {
+            log(`[init] Connecting with slowMo: ${process.env.SLOW_MODE}`);
+            browser = await chromium.connectOverCDP(webSocketDebuggerUrl, {
+              slowMo: Number(process.env.SLOW_MODE),
+            });
+          } else {
+            log('[init] Connecting with default slowMo: 50');
+            browser = await chromium.connectOverCDP(webSocketDebuggerUrl, {
+              slowMo: 50,
+            });
+          }
+        } else {
+          log('[init] Connecting without slowMo');
+          browser = await chromium.connectOverCDP(webSocketDebuggerUrl);
+        }
+        
+        log('[init] Successfully connected to browser');
+        
+        const isConnected = await browser.isConnected();
+        log(`[init] Browser connection status: ${isConnected}`);
+        
+        return isConnected;
+      } catch (connectError) {
+        log(`[init] Failed to connect to browser: ${connectError.message}`);
+        throw new Error(`Failed to connect to browser: ${connectError.message}`);
+      }
+    } catch (error) {
+      log(`[init] Browser initialization failed: ${error.message}`);
+      throw error;
     }
-    return browser.isConnected();
   },
   async clear() {
     browser = null;
     return true;
   },
   async assignWindows() {
-    const metamaskExtensionId = await module.exports.metamaskExtensionId();
-
-    let pages = await browser.contexts()[0].pages();
-    for (const page of pages) {
-      if (page.url().includes('specs/runner')) {
-        mainWindow = page;
-      } else if (
-        page
-          .url()
-          .includes(`chrome-extension://${metamaskExtensionId}/home.html`)
-      ) {
-        metamaskWindow = page;
-      } else if (
-        page
-          .url()
-          .includes(
-            `chrome-extension://${metamaskExtensionId}/notification.html`,
-          )
-      ) {
-        metamaskNotificationWindow = page;
-      } else if (
-        page
-          .url()
-          .includes(`chrome-extension://${metamaskExtensionId}/popup.html`)
-      ) {
-        metamaskPopupWindow = page;
+    try {
+      // Ensure browser is initialized
+      if (!browser) {
+        log('Browser not initialized in assignWindows, attempting to initialize...');
+        try {
+          // Add a timeout to prevent hanging
+          const initPromise = module.exports.init();
+          const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Browser initialization timed out after 30 seconds')), 30000);
+          });
+          
+          await Promise.race([initPromise, timeoutPromise]);
+          log('Browser initialized successfully in assignWindows');
+        } catch (initError) {
+          log(`Failed to initialize browser in assignWindows: ${initError.message}`);
+          throw initError;
+        }
       }
+
+      const metamaskExtensionId = await module.exports.metamaskExtensionId();
+
+      let pages = await browser.contexts()[0].pages();
+      for (const page of pages) {
+        if (page.url().includes('specs/runner')) {
+          mainWindow = page;
+        } else if (
+          page
+            .url()
+            .includes(`chrome-extension://${metamaskExtensionId}/home.html`)
+        ) {
+          metamaskWindow = page;
+        } else if (
+          page
+            .url()
+            .includes(
+              `chrome-extension://${metamaskExtensionId}/notification.html`,
+            )
+        ) {
+          metamaskNotificationWindow = page;
+        } else if (
+          page
+            .url()
+            .includes(`chrome-extension://${metamaskExtensionId}/popup.html`)
+        ) {
+          metamaskPopupWindow = page;
+        }
+      }
+      return true;
+    } catch (error) {
+      log(`Error in assignWindows: ${error.message}`);
+      throw error;
     }
-    return true;
   },
   async assignActiveTabName(tabName) {
     activeTabName = tabName;
@@ -165,37 +263,106 @@ module.exports = {
     return true;
   },
   async switchToMetamaskNotification() {
-    const metamaskExtensionId = await module.exports.metamaskExtensionId();
+    try {
+      // Ensure browser is initialized
+      if (!browser) {
+        log('Browser not initialized in switchToMetamaskNotification, attempting to initialize...');
+        try {
+          // Add a timeout to prevent hanging
+          const initPromise = module.exports.init();
+          const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Browser initialization timed out after 30 seconds')), 30000);
+          });
+          
+          await Promise.race([initPromise, timeoutPromise]);
+          log('Browser initialized successfully in switchToMetamaskNotification');
+        } catch (initError) {
+          log(`Failed to initialize browser in switchToMetamaskNotification: ${initError.message}`);
+          throw initError;
+        }
+      }
 
-    let pages = await browser.contexts()[0].pages();
-    for (const page of pages) {
-      if (
-        page
-          .url()
-          .includes(
+      const metamaskExtensionId = await module.exports.metamaskExtensionId();
+      log(`Looking for MetaMask notification with extension ID: ${metamaskExtensionId}`);
+
+      let pages = await browser.contexts()[0].pages();
+      log(`Found ${pages.length} pages in browser context`);
+      
+      // Log all page URLs for debugging
+      for (let i = 0; i < pages.length; i++) {
+        const pageUrl = pages[i].url();
+        log(`Page ${i}: ${pageUrl}`);
+      }
+
+      for (const page of pages) {
+        const pageUrl = page.url();
+        log(`Checking page URL: ${pageUrl}`);
+        
+        if (
+          pageUrl.includes(
             `chrome-extension://${metamaskExtensionId}/notification.html`,
           )
-      ) {
-        metamaskNotificationWindow = page;
-        retries = 0;
-        await page.bringToFront();
-        await module.exports.waitUntilStable(page);
-        await module.exports.waitFor(
-          notificationPageElements.notificationAppContent,
-          page,
-        );
-        return page;
+        ) {
+          log('Found MetaMask notification page!');
+          metamaskNotificationWindow = page;
+          retries = 0;
+          await page.bringToFront();
+          await module.exports.waitUntilStable(page);
+          
+          // Wait for the notification content to be present
+          try {
+            await module.exports.waitFor(
+              notificationPageElements.notificationAppContent,
+              page,
+            );
+            log('Notification content loaded successfully');
+          } catch (waitError) {
+            log(`Warning: Could not find notification content: ${waitError.message}`);
+            
+            // Try to find alternative selectors
+            const alternativeSelectors = [
+              '.notification',
+              '#app-content',
+              '.app',
+              '[data-testid="page-container"]',
+              '.page-container'
+            ];
+            
+            for (const selector of alternativeSelectors) {
+              try {
+                const element = page.locator(selector);
+                const count = await element.count();
+                if (count > 0) {
+                  log(`Found alternative selector: ${selector} (${count} elements)`);
+                  break;
+                }
+              } catch (altError) {
+                log(`Alternative selector ${selector} not found: ${altError.message}`);
+              }
+            }
+            
+            // Continue anyway as the page might still be loading
+          }
+          
+          return page;
+        }
       }
-    }
-    await sleep(200);
-    if (retries < 50) {
-      retries++;
-      return await module.exports.switchToMetamaskNotification();
-    } else if (retries >= 50) {
-      retries = 0;
-      throw new Error(
-        '[switchToMetamaskNotification] Max amount of retries to switch to metamask notification window has been reached. It was never found.',
-      );
+      
+      log(`No MetaMask notification page found. Retry ${retries + 1}/50`);
+      await sleep(500); // Increased wait time
+      
+      if (retries < 50) {
+        retries++;
+        return await module.exports.switchToMetamaskNotification();
+      } else if (retries >= 50) {
+        retries = 0;
+        throw new Error(
+          '[switchToMetamaskNotification] Max amount of retries to switch to metamask notification window has been reached. It was never found.',
+        );
+      }
+    } catch (error) {
+      log(`Error in switchToMetamaskNotification: ${error.message}`);
+      throw error;
     }
   },
   async waitFor(selector, page = metamaskWindow) {
@@ -456,46 +623,93 @@ module.exports = {
       return extensionsData;
     }
 
-    const context = await browser.contexts()[0];
-    const page = await context.newPage();
+    try {
+      if (!browser) {
+        // Try to initialize the browser if it's not already initialized
+        log('Browser is not initialized, attempting to initialize...');
+        try {
+          // Add a timeout to prevent hanging
+          const initPromise = module.exports.init();
+          const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Browser initialization timed out after 30 seconds')), 30000);
+          });
+          
+          await Promise.race([initPromise, timeoutPromise]);
+          log('Browser initialized successfully');
+        } catch (initError) {
+          log(`Failed to initialize browser: ${initError.message}`);
+          throw new Error(`Browser is not initialized and failed to auto-initialize: ${initError.message}`);
+        }
+      }
 
-    await page.goto('chrome://extensions');
-    await page.waitForLoadState('load');
-    await page.waitForLoadState('domcontentloaded');
+      const contexts = await browser.contexts();
+      if (!contexts || contexts.length === 0) {
+        throw new Error('No browser contexts available.');
+      }
 
-    const devModeButton = page.locator('#devMode');
-    await devModeButton.waitFor();
-    await devModeButton.focus();
-    await devModeButton.click();
+      const context = contexts[0];
+      const page = await context.newPage();
 
-    const extensionDataItems = await page.locator('extensions-item').all();
-    for (const extensionData of extensionDataItems) {
-      const extensionName = (
-        await extensionData
-          .locator('#name-and-version')
-          .locator('#name')
-          .textContent()
-      ).toLowerCase();
+      await page.goto('chrome://extensions');
+      await page.waitForLoadState('load');
+      await page.waitForLoadState('domcontentloaded');
 
-      const extensionVersion = (
-        await extensionData
-          .locator('#name-and-version')
-          .locator('#version')
-          .textContent()
-      ).replace(/(\n| )/g, '');
+      const devModeButton = page.locator('#devMode');
+      await devModeButton.waitFor();
+      await devModeButton.focus();
+      await devModeButton.click();
 
-      const extensionId = (
-        await extensionData.locator('#extension-id').textContent()
-      ).split(': ')[1];
+      const extensionDataItems = await page.locator('extensions-item').all();
+      log(`Found ${extensionDataItems.length} extension items`);
+      
+      for (const extensionData of extensionDataItems) {
+        try {
+          const nameElement = extensionData.locator('#name-and-version').locator('#name');
+          const versionElement = extensionData.locator('#name-and-version').locator('#version');
+          const idElement = extensionData.locator('#extension-id');
+          
+          // Check if elements exist before trying to get text content
+          if (await nameElement.count() === 0 || await versionElement.count() === 0 || await idElement.count() === 0) {
+            continue;
+          }
+          
+          const extensionName = (
+            await nameElement.textContent()
+          ).toLowerCase();
 
-      extensionsData[extensionName] = {
-        version: extensionVersion,
-        id: extensionId,
-      };
+          const extensionVersion = (
+            await versionElement.textContent()
+          ).replace(/(\n| )/g, '');
+
+          const idText = await idElement.textContent();
+          const extensionId = idText.split(': ')[1];
+
+          if (extensionName && extensionVersion && extensionId) {
+            extensionsData[extensionName] = {
+              version: extensionVersion,
+              id: extensionId,
+            };
+            log(`Found extension: ${extensionName} (${extensionId})`);
+          }
+        } catch (extensionError) {
+          log(`Error processing extension data: ${extensionError.message}`);
+          continue;
+        }
+      }
+      
+      await page.close();
+      
+      if (_.isEmpty(extensionsData)) {
+        log('No extensions found or all extensions failed to process');
+      } else {
+        log(`Successfully processed ${Object.keys(extensionsData).length} extensions`);
+      }
+      
+      return extensionsData;
+    } catch (error) {
+      log(`Error getting extensions data: ${error.message}`);
+      throw new Error(`Failed to get extensions data: ${error.message}`);
     }
-    await page.close();
-
-    return extensionsData;
   },
 
   async screenshot(path, page = metamaskWindow) {

@@ -1,6 +1,6 @@
 {
-  "name": "@robertw07/synpress",
-  "version": "0.0.33",
+  "name": "@gracefnr/synpress",
+  "version": "0.0.8",
   "packageManager": "pnpm@9.1.3",
   "description": "Synpress is e2e testing framework based around Cypress.io & playwright with included MetaMask support. Test your dapps with ease.",
   "keywords": [
@@ -20,7 +20,7 @@
   },
   "license": "MIT",
   "author": {
-    "name": "Synthetix"
+    "name": "gracefnr"
   },
   "type": "commonjs",
   "main": "launcher.js",

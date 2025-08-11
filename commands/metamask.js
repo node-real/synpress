@@ -914,13 +914,19 @@ const metamask = {
     return true;
   },
   async acceptAccess(options) {
+    log('[acceptAccess] Starting acceptAccess function');
     const notificationPage = await playwright.switchToMetamaskNotification();
+    log('[acceptAccess] Successfully switched to MetaMask notification');
+    
     if (options && options.allAccounts) {
+      log('[acceptAccess] Selecting all accounts');
       await playwright.waitAndClick(
         notificationPageElements.selectAllCheckbox,
         notificationPage,
       );
     }
+    
+    log('[acceptAccess] Clicking next button');
     await playwright.waitAndClick(
       notificationPageElements.nextButton,
       notificationPage,
@@ -940,26 +946,31 @@ const metamask = {
       options &&
       (options.signInSignature || options.confirmSignatureRequest)
     ) {
+      log('[acceptAccess] Handling signature request');
       await playwright.waitAndClick(
         permissionsPageElements.connectButton,
         notificationPage,
         { waitForEvent: 'navi' },
       );
       await module.exports.confirmSignatureRequest();
+      log('[acceptAccess] Signature request confirmed');
       return true;
     }
 
     if (options && options.confirmDataSignatureRequest) {
+      log('[acceptAccess] Handling data signature request');
       await playwright.waitAndClick(
         permissionsPageElements.connectButton,
         notificationPage,
         { waitForEvent: 'navi' },
       );
       await module.exports.confirmDataSignatureRequest();
+      log('[acceptAccess] Data signature request confirmed');
       return true;
     }
 
     if (options && options.switchNetwork) {
+      log('[acceptAccess] Handling network switch');
       await playwright.waitAndClick(
         permissionsPageElements.connectButton,
         notificationPage,
@@ -970,14 +981,17 @@ const metamask = {
         notificationPage,
         { waitForEvent: 'close' },
       );
+      log('[acceptAccess] Network switch approved');
       return true;
     }
 
+    log('[acceptAccess] Handling standard connection request');
     await playwright.waitAndClick(
       permissionsPageElements.connectButton,
       notificationPage,
       { waitForEvent: 'close' },
     );
+    log('[acceptAccess] Connection request approved');
     return true;
   },
   async rejectAccess() {

@@ -83,7 +83,7 @@ module.exports = {
       newNetwork.network = newNetwork.name.toLowerCase().replace(' ', '-');
     }
 
-    log(`[addNetwork] Adding new network: ${newNetwork}`);
+    log(`[addNetwork] Adding new network: ${newNetwork.name}`);
     chains[newNetwork.network] = newNetwork;
     addedNetworks.push(newNetwork);
   },
