@@ -456,6 +456,26 @@ module.exports = {
       return extensionsData;
     }
 
+    let retries = 0;
+    const maxRetries = 10;
+    
+    while (retries < maxRetries) {
+      try {
+        const contexts = await browser.contexts();
+        if (contexts && contexts.length > 0) {
+          break;
+        }
+      } catch (error) {
+        log(`Browser not ready yet, retry ${retries + 1}/${maxRetries}`);
+        await sleep(1000); // 等待1秒
+        retries++;
+      }
+    }
+    
+    if (retries >= maxRetries) {
+      throw new Error('Browser failed to initialize properly');
+    }
+
     const context = await browser.contexts()[0];
     const page = await context.newPage();
 
