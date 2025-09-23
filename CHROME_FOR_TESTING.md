@@ -15,10 +15,10 @@
 ## 环境变量
 
 ### CHROME_FOR_TESTING_VERSION
-指定 Chrome for Testing 版本，默认为 `140.0.7339.185`
+指定 Chrome for Testing 版本，默认为 `136.0.7103.49`
 
 ```bash
-export CHROME_FOR_TESTING_VERSION="140.0.7339.185"
+export CHROME_FOR_TESTING_VERSION="136.0.7103.49"
 ```
 
 ## 使用方法

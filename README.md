@@ -282,8 +282,8 @@ npm run chrome:status
 # Enable Chrome for Testing (default: true)
 export USE_CHROME_FOR_TESTING=true
 
-# Specify Chrome version (default: 140.0.7339.185)
-export CHROME_FOR_TESTING_VERSION=140.0.7339.185
+# Specify Chrome version (default: 136.0.7103.49)
+export CHROME_FOR_TESTING_VERSION=136.0.7103.49
 ```
 
 For more details, see [Chrome for Testing Guide](./CHROME_FOR_TESTING.md).

@@ -80,7 +80,7 @@ Chrome for Testing 设置脚本
 
 示例:
   node scripts/setup-chrome.js
-  node scripts/setup-chrome.js --action=download --version=140.0.7339.185
+  node scripts/setup-chrome.js --action=download --version=136.0.7103.49
   node scripts/setup-chrome.js --action=verify
   node scripts/setup-chrome.js --action=clean --force
   node scripts/setup-chrome.js --action=status

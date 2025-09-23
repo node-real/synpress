@@ -5,7 +5,7 @@
  * 
  * 使用方法:
  *   node scripts/download-chrome.js
- *   node scripts/download-chrome.js --version=140.0.7339.185
+ *   node scripts/download-chrome.js --version=136.0.7103.49
  *   node scripts/download-chrome.js --platform=win32
  *   node scripts/download-chrome.js --help
  */
@@ -17,7 +17,7 @@ const helpers = require('../helpers');
 function parseArgs() {
   const args = process.argv.slice(2);
   const options = {
-    version: '140.0.7339.185',
+    version: '136.0.7103.49',
     platform: null,
     help: false
   };
@@ -50,15 +50,15 @@ Chrome for Testing 下载脚本
   node scripts/download-chrome.js [选项]
 
 选项:
-  --version=VERSION    指定 Chrome 版本 (默认: 140.0.7339.185)
+  --version=VERSION    指定 Chrome 版本 (默认: 136.0.7103.49)
   --platform=PLATFORM 指定平台 (win32, mac-x64, mac-arm64, linux64)
   --help, -h          显示此帮助信息
 
 示例:
   node scripts/download-chrome.js
-  node scripts/download-chrome.js --version=140.0.7339.185
+  node scripts/download-chrome.js --version=136.0.7103.49
   node scripts/download-chrome.js --platform=win32
-  node scripts/download-chrome.js --version=140.0.7339.185 --platform=win32
+  node scripts/download-chrome.js --version=136.0.7103.49 --platform=win32
 
 环境变量:
   CHROME_FOR_TESTING_VERSION  设置默认 Chrome 版本

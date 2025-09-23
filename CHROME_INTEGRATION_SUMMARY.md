@@ -67,7 +67,7 @@
 
 ### 2. 版本控制
 - ✅ 通过环境变量 `CHROME_FOR_TESTING_VERSION` 控制版本
-- ✅ 默认版本: 140.0.7339.185
+- ✅ 默认版本: 136.0.7103.49
 
 ### 3. 缓存机制
 - ✅ 避免重复下载
@@ -105,7 +105,7 @@ npm run chrome:verify
 export USE_CHROME_FOR_TESTING=true
 
 # 指定版本
-export CHROME_FOR_TESTING_VERSION=140.0.7339.185
+export CHROME_FOR_TESTING_VERSION=136.0.7103.49
 ```
 
 ### 3. 高级使用
@@ -148,7 +148,7 @@ pnpm add adm-zip
 - ✅ 与现有项目兼容
 
 ### 3. Chrome 版本
-- ✅ Chrome for Testing 140.0.7339.185
+- ✅ Chrome for Testing 136.0.7103.49
 - ✅ 支持扩展加载
 - ✅ 兼容 Cypress 和 Playwright
 

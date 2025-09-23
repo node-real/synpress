@@ -9,7 +9,7 @@
 **`e2e_cypress-action.yml`**:
 - ✅ 添加了 "Setup Chrome for Testing" 步骤
 - ✅ 配置了环境变量 `USE_CHROME_FOR_TESTING=true`
-- ✅ 配置了环境变量 `CHROME_FOR_TESTING_VERSION=140.0.7339.185`
+- ✅ 配置了环境变量 `CHROME_FOR_TESTING_VERSION=136.0.7103.49`
 - ✅ 在测试运行前自动下载和设置 Chrome for Testing
 
 **`e2e_headful.yml`**:
@@ -49,14 +49,14 @@ RUN echo "🔧 Setting up Chrome for Testing in Docker..." && \
 environment:
   # Chrome for Testing configuration
   - USE_CHROME_FOR_TESTING=true
-  - CHROME_FOR_TESTING_VERSION=140.0.7339.185
+  - CHROME_FOR_TESTING_VERSION=136.0.7103.49
 ```
 
 ### 3. 环境变量配置
 
 #### 3.1 GitHub Actions 环境变量
 - ✅ `USE_CHROME_FOR_TESTING=true` - 启用 Chrome for Testing
-- ✅ `CHROME_FOR_TESTING_VERSION=140.0.7339.185` - 指定版本
+- ✅ `CHROME_FOR_TESTING_VERSION=136.0.7103.49` - 指定版本
 
 #### 3.2 Docker 环境变量
 - ✅ 在 `docker-compose.ci.yml` 中配置相同的环境变量
@@ -75,14 +75,14 @@ environment:
     pnpm run chrome:download
     echo "✅ Chrome for Testing setup complete"
   env:
-    CHROME_FOR_TESTING_VERSION: 140.0.7339.185
+    CHROME_FOR_TESTING_VERSION: 136.0.7103.49
     USE_CHROME_FOR_TESTING: true
 
 - name: Run e2e tests
   # ... 测试步骤
   env:
     USE_CHROME_FOR_TESTING: true
-    CHROME_FOR_TESTING_VERSION: 140.0.7339.185
+    CHROME_FOR_TESTING_VERSION: 136.0.7103.49
 ```
 
 #### 4.2 Docker 构建流程
@@ -145,7 +145,7 @@ RUN pnpm run chrome:download
 ```bash
 # 设置环境变量
 export USE_CHROME_FOR_TESTING=true
-export CHROME_FOR_TESTING_VERSION=140.0.7339.185
+export CHROME_FOR_TESTING_VERSION=136.0.7103.49
 
 # 运行测试
 npm run test:e2e
@@ -167,7 +167,7 @@ npm run chrome:verify
 ## 兼容性
 
 ### 1. 浏览器版本
-- ✅ Chrome for Testing 140.0.7339.185
+- ✅ Chrome for Testing 136.0.7103.49
 - ✅ 支持扩展加载
 - ✅ 兼容 Cypress 和 Playwright
 

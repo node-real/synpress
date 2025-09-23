@@ -266,7 +266,7 @@ module.exports = {
   // Chrome for Testing 相关函数
   async getChromeForTestingInfo() {
     const platform = os.platform();
-    const version = process.env.CHROME_FOR_TESTING_VERSION || '140.0.7339.185';
+    const version = process.env.CHROME_FOR_TESTING_VERSION || '136.0.7103.49';
     
     const platformMap = {
       'win32': 'win32',

@@ -52,7 +52,7 @@ RUN echo "🔧 Setting up Chrome for Testing in Docker..." && \
 environment:
   # Chrome for Testing configuration
   - USE_CHROME_FOR_TESTING=true
-  - CHROME_FOR_TESTING_VERSION=140.0.7339.185
+  - CHROME_FOR_TESTING_VERSION=136.0.7103.49
 ```
 
 ## 环境变量配置
@@ -63,7 +63,7 @@ environment:
 env:
   # Chrome for Testing configuration
   USE_CHROME_FOR_TESTING: true
-  CHROME_FOR_TESTING_VERSION: 140.0.7339.185
+  CHROME_FOR_TESTING_VERSION: 136.0.7103.49
 ```
 
 ### 2. Docker 环境变量
@@ -71,7 +71,7 @@ env:
 ```yaml
 environment:
   - USE_CHROME_FOR_TESTING=true
-  - CHROME_FOR_TESTING_VERSION=140.0.7339.185
+  - CHROME_FOR_TESTING_VERSION=136.0.7103.49
 ```
 
 ## 工作流步骤
@@ -88,14 +88,14 @@ environment:
     pnpm run chrome:download
     echo "✅ Chrome for Testing setup complete"
   env:
-    CHROME_FOR_TESTING_VERSION: 140.0.7339.185
+    CHROME_FOR_TESTING_VERSION: 136.0.7103.49
     USE_CHROME_FOR_TESTING: true
 
 - name: Run e2e tests
   run: pnpm test:e2e:anvil
   env:
     USE_CHROME_FOR_TESTING: true
-    CHROME_FOR_TESTING_VERSION: 140.0.7339.185
+    CHROME_FOR_TESTING_VERSION: 136.0.7103.49
 ```
 
 ### 2. Docker 构建流程
@@ -147,7 +147,7 @@ RUN pnpm run chrome:download
 #### 1.1 下载失败
 ```bash
 # 检查网络连接
-curl -I https://storage.googleapis.com/chrome-for-testing-public/140.0.7339.185/linux64/chrome-linux64.zip
+curl -I https://storage.googleapis.com/chrome-for-testing-public/136.0.7103.49/linux64/chrome-linux64.zip
 
 # 检查磁盘空间
 df -h
@@ -170,7 +170,7 @@ echo $CHROME_FOR_TESTING_VERSION
 
 # 设置环境变量
 export USE_CHROME_FOR_TESTING=true
-export CHROME_FOR_TESTING_VERSION=140.0.7339.185
+export CHROME_FOR_TESTING_VERSION=136.0.7103.49
 ```
 
 ### 2. 调试步骤

@@ -61,7 +61,7 @@ jobs:
           pnpm run chrome:download
           echo "✅ Chrome for Testing setup complete"
         env:
-          CHROME_FOR_TESTING_VERSION: 140.0.7339.185
+          CHROME_FOR_TESTING_VERSION: 136.0.7103.49
           USE_CHROME_FOR_TESTING: true
 
       - name: Install linux deps
@@ -83,7 +83,7 @@ jobs:
           DISPLAY: :0.0
           # Chrome for Testing configuration
           USE_CHROME_FOR_TESTING: true
-          CHROME_FOR_TESTING_VERSION: 140.0.7339.185
+          CHROME_FOR_TESTING_VERSION: 136.0.7103.49
 
       - name: Archive e2e artifacts
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # pin@v2

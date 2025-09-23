@@ -65,7 +65,7 @@ jobs:
           pnpm run chrome:download --platform=${{ matrix.platform }}
           echo "✅ Download test completed"
         env:
-          CHROME_FOR_TESTING_VERSION: 140.0.7339.185
+          CHROME_FOR_TESTING_VERSION: 136.0.7103.49
           USE_CHROME_FOR_TESTING: true
 
       - name: Test Chrome for Testing Status
@@ -143,7 +143,7 @@ jobs:
           echo "✅ Cypress integration test completed"
         env:
           USE_CHROME_FOR_TESTING: true
-          CHROME_FOR_TESTING_VERSION: 140.0.7339.185
+          CHROME_FOR_TESTING_VERSION: 136.0.7103.49
 
       - name: Test Environment Variables
         run: |
@@ -152,7 +152,7 @@ jobs:
           echo "Testing with USE_CHROME_FOR_TESTING=false"
           export USE_CHROME_FOR_TESTING=true
           echo "Testing with USE_CHROME_FOR_TESTING=true"
-          export CHROME_FOR_TESTING_VERSION=140.0.7339.185
+          export CHROME_FOR_TESTING_VERSION=136.0.7103.49
           echo "Testing with custom version"
           echo "✅ Environment variable test completed"
 
