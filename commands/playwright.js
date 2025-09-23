@@ -78,6 +78,15 @@ module.exports = {
     const debuggerDetails = await fetch('http://127.0.0.1:9222/json/version'); //DevSkim: ignore DS137138
     const debuggerDetailsConfig = await debuggerDetails.json();
     const webSocketDebuggerUrl = debuggerDetailsConfig.webSocketDebuggerUrl;
+    
+    // 验证当前使用的 Chrome 版本
+    console.log('🔍 Playwright 连接的 Chrome 信息:', {
+      userAgent: debuggerDetailsConfig['User-Agent'],
+      webKitVersion: debuggerDetailsConfig['WebKit-Version'],
+      v8Version: debuggerDetailsConfig['V8-Version'],
+      browser: debuggerDetailsConfig['Browser'],
+      protocolVersion: debuggerDetailsConfig['Protocol-Version']
+    });
     if (process.env.SLOW_MODE) {
       if (!isNaN(process.env.SLOW_MODE)) {
         browser = await chromium.connectOverCDP(webSocketDebuggerUrl, {

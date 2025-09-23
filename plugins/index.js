@@ -25,9 +25,31 @@ module.exports = (on, config) => {
             console.log('🔄 强制重新下载 Chrome for Testing...');
           }
           const chromeBinaryPath = await helpers.prepareChromeForTesting(forceRedownload);
-          // 通过修改 browser 对象来指定自定义 Chrome 路径
+          
+          // 尝试多种方式设置自定义 Chrome 路径
+          console.log(`✅ 准备使用 Chrome for Testing: ${chromeBinaryPath}`);
+          
+          // 方法1: 修改 browser 对象
           browser.path = chromeBinaryPath;
-          console.log(`✅ 使用 Chrome for Testing: ${chromeBinaryPath}`);
+          
+          // 方法2: 通过 arguments 设置
+          arguments_.args.push(`--chrome-binary=${chromeBinaryPath}`);
+          
+          // 方法3: 设置环境变量
+          process.env.CHROME_BIN = chromeBinaryPath;
+          
+          console.log(`🔍 Browser 对象信息:`, {
+            name: browser.name,
+            path: browser.path,
+            version: browser.version,
+            isHeadless: browser.isHeadless
+          });
+          
+          console.log(`🔍 Arguments 信息:`, {
+            executablePath: arguments_.executablePath,
+            args: arguments_.args.filter(arg => arg.includes('chrome-binary')),
+            extensions: arguments_.extensions.length
+          });
         } catch (error) {
           console.warn(`⚠️  Chrome for Testing 准备失败: ${error.message}`);
           console.warn('⚠️  回退到系统 Chrome，可能不支持扩展加载');
