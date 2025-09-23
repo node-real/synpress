@@ -190,82 +190,189 @@ module.exports = {
   },
   async switchToMetamaskNotification() {
     const metamaskExtensionId = await module.exports.metamaskExtensionId();
+    const NOTIFICATION_PAGE_TIMEOUT = 10000; // 10 seconds timeout
+    const MAX_RETRIES = 50;
 
-    let pages = await browser.contexts()[0].pages();
-    for (const page of pages) {
-      if (
-        page
-          .url()
-          .includes(
-            `chrome-extension://${metamaskExtensionId}/notification.html`,
-          )
-      ) {
-        metamaskNotificationWindow = page;
-        retries = 0;
-        await page.bringToFront();
-        await module.exports.waitUntilStable(page);
-        await module.exports.waitFor(
-          notificationPageElements.notificationAppContent,
-          page,
-        );
-        return page;
+    // Helper function to check if page is valid and not closed
+    const isPageValid = (page) => {
+      try {
+        return page && !page.isClosed() && page.url();
+      } catch (error) {
+        log(`[switchToMetamaskNotification] Error checking page validity: ${error.message}`);
+        return false;
       }
-    }
-    await sleep(200);
-    if (retries < 50) {
-      retries++;
-      return await module.exports.switchToMetamaskNotification();
-    } else if (retries >= 50) {
+    };
+
+    // Helper function to safely bring page to front
+    const safeBringToFront = async (page) => {
+      try {
+        if (isPageValid(page)) {
+          await page.bringToFront();
+        }
+      } catch (error) {
+        log(`[switchToMetamaskNotification] Error bringing page to front: ${error.message}`);
+        // Don't throw, just log and continue
+      }
+    };
+
+    try {
+      // Check if browser and context are still valid
+      if (!browser || !browser.contexts() || browser.contexts().length === 0) {
+        throw new Error('[switchToMetamaskNotification] Browser or context is not available');
+      }
+
+      let pages = await browser.contexts()[0].pages();
+      
+      // Filter out closed pages
+      pages = pages.filter(isPageValid);
+      
+      for (const page of pages) {
+        try {
+          if (
+            page
+              .url()
+              .includes(
+                `chrome-extension://${metamaskExtensionId}/notification.html`,
+              )
+          ) {
+            metamaskNotificationWindow = page;
+            retries = 0;
+            
+            await safeBringToFront(page);
+            
+            // Use the improved waitUntilStable with error handling
+            await module.exports.waitUntilStable(page);
+            
+            // Check if page is still valid after waitUntilStable
+            if (!isPageValid(page)) {
+              log('[switchToMetamaskNotification] Page became invalid after waitUntilStable, continuing search');
+              continue;
+            }
+            
+            await module.exports.waitFor(
+              notificationPageElements.notificationAppContent,
+              page,
+            );
+            return page;
+          }
+        } catch (error) {
+          log(`[switchToMetamaskNotification] Error processing page: ${error.message}`);
+          // Continue to next page instead of failing
+          continue;
+        }
+      }
+      
+      // If no notification page found, wait and retry with exponential backoff
+      const waitTime = Math.min(200 * Math.pow(1.5, retries), 5000); // Max 5 seconds
+      await sleep(waitTime);
+      
+      if (retries < MAX_RETRIES) {
+        retries++;
+        log(`[switchToMetamaskNotification] Notification page not found, retrying (${retries}/${MAX_RETRIES})...`);
+        return await module.exports.switchToMetamaskNotification();
+      } else {
+        retries = 0;
+        throw new Error(
+          '[switchToMetamaskNotification] Max amount of retries to switch to metamask notification window has been reached. It was never found.',
+        );
+      }
+    } catch (error) {
       retries = 0;
-      throw new Error(
-        '[switchToMetamaskNotification] Max amount of retries to switch to metamask notification window has been reached. It was never found.',
-      );
+      if (error.message.includes('Target page, context or browser has been closed')) {
+        log(`[switchToMetamaskNotification] Browser/context/page closed: ${error.message}`);
+        throw new Error('[switchToMetamaskNotification] Browser context or page has been closed. Please restart the test.');
+      }
+      throw error;
     }
   },
   async waitFor(selector, page = metamaskWindow) {
-    await module.exports.waitUntilStable(page);
-    await page.waitForSelector(selector, { strict: false });
-    const element = page.locator(selector).first();
-    await element.waitFor();
-    await element.focus();
-    if (process.env.STABLE_MODE) {
-      if (!isNaN(process.env.STABLE_MODE)) {
-        await page.waitForTimeout(Number(process.env.STABLE_MODE));
-      } else {
-        await page.waitForTimeout(300);
-      }
+    // Check if page is valid before proceeding
+    if (!page || page.isClosed()) {
+      throw new Error('[waitFor] Page is closed or invalid');
     }
-    return element;
+
+    try {
+      await module.exports.waitUntilStable(page);
+      
+      // Check again after waitUntilStable
+      if (!page || page.isClosed()) {
+        throw new Error('[waitFor] Page became closed after waitUntilStable');
+      }
+      
+      await page.waitForSelector(selector, { strict: false, timeout: 10000 });
+      const element = page.locator(selector).first();
+      await element.waitFor({ timeout: 10000 });
+      await element.focus();
+      
+      if (process.env.STABLE_MODE) {
+        if (!isNaN(process.env.STABLE_MODE)) {
+          await page.waitForTimeout(Number(process.env.STABLE_MODE));
+        } else {
+          await page.waitForTimeout(300);
+        }
+      }
+      return element;
+    } catch (error) {
+      if (error.message.includes('Target page, context or browser has been closed')) {
+        log(`[waitFor] Page/context/browser closed during waitFor: ${error.message}`);
+        throw new Error('[waitFor] Page or browser context has been closed');
+      }
+      throw error;
+    }
   },
   async waitAndClick(selector, page = metamaskWindow, args = {}) {
-    const element = await module.exports.waitFor(selector, page);
-    if (args.numberOfClicks && !args.waitForEvent) {
-      await element.click({
-        clickCount: args.numberOfClicks,
-        force: args.force,
-      });
-    } else if (args.numberOfClicks && args.waitForEvent) {
-      await Promise.all([
-        page.waitForEvent(args.waitForEvent),
-        element.click({ clickCount: args.numberOfClicks, force: args.force }),
-      ]);
-    } else if (args.waitForEvent) {
-      if (args.waitForEvent.includes('navi')) {
-        await Promise.all([
-          page.waitForNavigation(),
-          element.click({ force: args.force }),
-        ]);
-      } else {
-        await Promise.all([
-          page.waitForEvent(args.waitForEvent),
-          element.click({ force: args.force }),
-        ]);
-      }
-    } else {
-      await element.click({ force: args.force });
+    // Check if page is valid before proceeding
+    if (!page || page.isClosed()) {
+      throw new Error('[waitAndClick] Page is closed or invalid');
     }
-    await module.exports.waitUntilStable();
-    return element;
+
+    try {
+      const element = await module.exports.waitFor(selector, page);
+      
+      // Check if page is still valid after waitFor
+      if (!page || page.isClosed()) {
+        throw new Error('[waitAndClick] Page became closed after waitFor');
+      }
+      
+      if (args.numberOfClicks && !args.waitForEvent) {
+        await element.click({
+          clickCount: args.numberOfClicks,
+          force: args.force,
+        });
+      } else if (args.numberOfClicks && args.waitForEvent) {
+        await Promise.all([
+          page.waitForEvent(args.waitForEvent, { timeout: 10000 }),
+          element.click({ clickCount: args.numberOfClicks, force: args.force }),
+        ]);
+      } else if (args.waitForEvent) {
+        if (args.waitForEvent.includes('navi')) {
+          await Promise.all([
+            page.waitForNavigation({ timeout: 10000 }),
+            element.click({ force: args.force }),
+          ]);
+        } else {
+          await Promise.all([
+            page.waitForEvent(args.waitForEvent, { timeout: 10000 }),
+            element.click({ force: args.force }),
+          ]);
+        }
+      } else {
+        await element.click({ force: args.force });
+      }
+      
+      // Only call waitUntilStable if page is still valid
+      if (page && !page.isClosed()) {
+        await module.exports.waitUntilStable();
+      }
+      
+      return element;
+    } catch (error) {
+      if (error.message.includes('Target page, context or browser has been closed')) {
+        log(`[waitAndClick] Page/context/browser closed during waitAndClick: ${error.message}`);
+        throw new Error('[waitAndClick] Page or browser context has been closed');
+      }
+      throw error;
+    }
   },
   async waitAndClickByText(selector, text, page = metamaskWindow) {
     await module.exports.waitFor(selector, page);
@@ -374,6 +481,26 @@ module.exports = {
   },
   async waitUntilStable(page) {
     const metamaskExtensionId = await module.exports.metamaskExtensionId();
+    const DEFAULT_TIMEOUT = 10000; // 10 seconds timeout
+
+    // Helper function to safely wait for load state with timeout and error handling
+    const safeWaitForLoadState = async (targetPage, state, timeout = DEFAULT_TIMEOUT) => {
+      try {
+        // Check if page is still valid before waiting
+        if (!targetPage || targetPage.isClosed()) {
+          log(`[waitUntilStable] Page is closed, skipping waitForLoadState for ${state}`);
+          return;
+        }
+        await targetPage.waitForLoadState(state, { timeout });
+      } catch (error) {
+        if (error.message.includes('Target page, context or browser has been closed')) {
+          log(`[waitUntilStable] Page/context/browser closed during waitForLoadState for ${state}: ${error.message}`);
+          return; // Don't throw, just log and continue
+        }
+        log(`[waitUntilStable] Error during waitForLoadState for ${state}: ${error.message}`);
+        throw error;
+      }
+    };
 
     if (
       page &&
@@ -381,20 +508,24 @@ module.exports = {
         .url()
         .includes(`chrome-extension://${metamaskExtensionId}/notification.html`)
     ) {
-      await page.waitForLoadState('load');
-      await page.waitForLoadState('domcontentloaded');
-      await page.waitForLoadState('networkidle');
+      await safeWaitForLoadState(page, 'load');
+      await safeWaitForLoadState(page, 'domcontentloaded');
+      await safeWaitForLoadState(page, 'networkidle');
       await module.exports.waitUntilNotificationWindowIsStable();
     }
-    await metamaskWindow.waitForLoadState('load');
-    await metamaskWindow.waitForLoadState('domcontentloaded');
-    await metamaskWindow.waitForLoadState('networkidle');
-    await module.exports.waitUntilMetamaskWindowIsStable();
-    if (mainWindow) {
-      await mainWindow.waitForLoadState('load');
-      await mainWindow.waitForLoadState('domcontentloaded');
+    
+    if (metamaskWindow && !metamaskWindow.isClosed()) {
+      await safeWaitForLoadState(metamaskWindow, 'load');
+      await safeWaitForLoadState(metamaskWindow, 'domcontentloaded');
+      await safeWaitForLoadState(metamaskWindow, 'networkidle');
+      await module.exports.waitUntilMetamaskWindowIsStable();
+    }
+    
+    if (mainWindow && !mainWindow.isClosed()) {
+      await safeWaitForLoadState(mainWindow, 'load');
+      await safeWaitForLoadState(mainWindow, 'domcontentloaded');
       // todo: this may slow down tests and not be necessary but could improve stability
-      // await mainWindow.waitForLoadState('networkidle');
+      // await safeWaitForLoadState(mainWindow, 'networkidle');
     }
   },
   async waitUntilNotificationWindowIsStable(page = metamaskNotificationWindow) {
