@@ -28,14 +28,15 @@ module.exports = (on, config) => {
           
           console.log(`✅ 准备使用 Chrome for Testing: ${chromeBinaryPath}`);
           
-          // 注意：在 before:browser:launch 中无法直接设置自定义浏览器路径
-          // 正确的方式是通过命令行参数 --browser 来指定
-          // 这里我们只能设置环境变量，供其他工具使用
+          // 尝试通过 launchOptions.args 设置自定义浏览器路径
+          // 这是 Cypress 支持的方式
+          arguments_.args.push(`--browser=${chromeBinaryPath}`);
+          
+          // 同时设置环境变量作为备用方案
           process.env.CHROME_BIN = chromeBinaryPath;
           process.env.CHROME_FOR_TESTING_PATH = chromeBinaryPath;
           
-          console.log(`⚠️  注意：在 before:browser:launch 中无法直接设置自定义浏览器路径`);
-          console.log(`💡 建议：使用命令行参数 --browser "${chromeBinaryPath}" 来指定 Chrome for Testing`);
+          console.log(`🔧 已通过 launchOptions.args 设置浏览器路径: ${chromeBinaryPath}`);
           console.log(`🔧 已设置环境变量 CHROME_BIN: ${chromeBinaryPath}`);
           
           console.log(`🔍 Browser 对象信息:`, {
@@ -47,7 +48,8 @@ module.exports = (on, config) => {
           
           console.log(`🔍 LaunchOptions 信息:`, {
             extensions: arguments_.extensions.length,
-            args: arguments_.args.length
+            args: arguments_.args.length,
+            extensionPaths: arguments_.extensions
           });
         } catch (error) {
           console.warn(`⚠️  Chrome for Testing 准备失败: ${error.message}`);
