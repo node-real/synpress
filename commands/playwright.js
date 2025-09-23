@@ -60,10 +60,21 @@ module.exports = {
   async metamaskExtensionId() {
     const extensionsData = await module.exports.getExtensionsData();
     console.log('Available extensions:', Object.keys(extensionsData));
+    console.log('Available extensions (with quotes):', Object.keys(extensionsData).map(key => `"${key}"`));
     
     const metamaskExtensionData = extensionsData.metamask;
     if (!metamaskExtensionData) {
-      throw new Error(`MetaMask extension not found in extensions list. Available extensions: ${Object.keys(extensionsData).join(', ')}`);
+      // 尝试查找包含 "metamask" 的扩展
+      const metamaskKey = Object.keys(extensionsData).find(key => 
+        key.toLowerCase().includes('metamask')
+      );
+      
+      if (metamaskKey) {
+        console.log(`Found MetaMask with key: "${metamaskKey}"`);
+        return extensionsData[metamaskKey].id;
+      }
+      
+      throw new Error(`MetaMask extension not found in extensions list. Available extensions: ${Object.keys(extensionsData).map(key => `"${key}"`).join(', ')}`);
     }
     
     return metamaskExtensionData.id;
@@ -489,23 +500,23 @@ module.exports = {
     
     for (const extensionData of extensionDataItems) {
       try {
-        const extensionName = (
-          await extensionData
-            .locator('#name-and-version')
-            .locator('#name')
-            .textContent()
-        ).toLowerCase();
+      const extensionName = (
+        await extensionData
+          .locator('#name-and-version')
+          .locator('#name')
+          .textContent()
+      ).toLowerCase().trim();
 
         const extensionVersion = (
           await extensionData
             .locator('#name-and-version')
             .locator('#version')
             .textContent()
-        ).replace(/(\n| )/g, '');
+        ).trim().replace(/(\n| )/g, '');
 
         const extensionId = (
           await extensionData.locator('#extension-id').textContent()
-        ).split(': ')[1];
+        ).trim().split(': ')[1];
 
         console.log(`Found extension: ${extensionName} (${extensionVersion}) - ID: ${extensionId}`);
 
