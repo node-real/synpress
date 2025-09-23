@@ -18,7 +18,6 @@ module.exports = (on, config) => {
       if (useChromeForTesting) {
         try {
           console.log('🔧 准备 Chrome for Testing...');
-          process.env.FORCE_REDOWNLOAD_CHROME = true
           // 检查是否需要强制重新下载 Chrome
           const forceRedownload = process.env.FORCE_REDOWNLOAD_CHROME === 'true';
           if (forceRedownload) {

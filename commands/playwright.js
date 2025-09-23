@@ -59,8 +59,6 @@ module.exports = {
   },
   async metamaskExtensionId() {
     const extensionsData = await module.exports.getExtensionsData();
-    console.log('Available extensions:', Object.keys(extensionsData));
-    console.log('Available extensions (with quotes):', Object.keys(extensionsData).map(key => `"${key}"`));
     
     const metamaskExtensionData = extensionsData.metamask;
     if (!metamaskExtensionData) {
@@ -518,7 +516,6 @@ module.exports = {
           await extensionData.locator('#extension-id').textContent()
         ).trim().split(': ')[1];
 
-        console.log(`Found extension: ${extensionName} (${extensionVersion}) - ID: ${extensionId}`);
 
         extensionsData[extensionName] = {
           version: extensionVersion,
