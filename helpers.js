@@ -199,17 +199,26 @@ module.exports = {
       log(
         `Trying to download and extract file from: ${url} to following path: ${destination}`,
       );
+      
+      // Ensure the destination directory exists before downloading
+      await module.exports.createDirIfNotExist(destination);
+      
       if (process.env.GH_USERNAME && process.env.GH_PAT) {
+        log(`Using GitHub authentication for download`);
         await download(url, destination, {
           extract: true,
           auth: `${process.env.GH_USERNAME}:${process.env.GH_PAT}`,
         });
       } else {
+        log(`Downloading without authentication (may hit rate limits)`);
         await download(url, destination, {
           extract: true,
         });
       }
+      
+      log(`Download and extraction completed successfully`);
     } catch (e) {
+      log(`Download failed with error: ${e.message}`);
       throw new Error(
         `[download] Unable to download metamask release from: ${url} to: ${destination} with following error:\n${e}`,
       );
@@ -238,7 +247,16 @@ module.exports = {
       metamaskManifestFilePath,
     );
     if (!metamaskDirectoryExists && !metamaskManifestFileExists) {
-      await module.exports.download(release.downloadUrl, metamaskDirectory);
+      log(`MetaMask directory doesn't exist, starting download...`);
+      log(`Download URL: ${release.downloadUrl}`);
+      log(`Target directory: ${metamaskDirectory}`);
+      try {
+        await module.exports.download(release.downloadUrl, metamaskDirectory);
+        log(`MetaMask download completed successfully`);
+      } catch (error) {
+        log(`MetaMask download failed: ${error.message}`);
+        throw error;
+      }
     } else {
       log('Metamask is already downloaded');
     }
