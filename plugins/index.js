@@ -19,7 +19,8 @@ module.exports = (on, config) => {
         try {
           console.log('🔧 准备 Chrome for Testing...');
           const chromeBinaryPath = await helpers.prepareChromeForTesting();
-          arguments_.executablePath = chromeBinaryPath;
+          // 通过修改 browser 对象来指定自定义 Chrome 路径
+          browser.path = chromeBinaryPath;
           console.log(`✅ 使用 Chrome for Testing: ${chromeBinaryPath}`);
         } catch (error) {
           console.warn(`⚠️  Chrome for Testing 准备失败: ${error.message}`);
