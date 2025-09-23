@@ -287,7 +287,7 @@ module.exports = {
     const version = process.env.CHROME_FOR_TESTING_VERSION || '136.0.7103.49';
     
     const platformMap = {
-      'win32': 'win32',
+      'win32': 'win64',
       'darwin': 'mac-x64', // 可以根据需要添加 mac-arm64
       'linux': 'linux64'
     };
@@ -371,6 +371,7 @@ module.exports = {
 
   getChromeBinaryPath(chromeDirectory, platform) {
     const binaryMap = {
+      'win64': path.join(chromeDirectory, 'chrome-win64', 'chrome.exe'),
       'win32': path.join(chromeDirectory, 'chrome-win32', 'chrome.exe'),
       'mac-x64': path.join(chromeDirectory, 'chrome-mac-x64', 'Google Chrome for Testing.app', 'Contents', 'MacOS', 'Google Chrome for Testing'),
       'mac-arm64': path.join(chromeDirectory, 'chrome-mac-arm64', 'Google Chrome for Testing.app', 'Contents', 'MacOS', 'Google Chrome for Testing'),
