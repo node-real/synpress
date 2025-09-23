@@ -26,17 +26,17 @@ module.exports = (on, config) => {
           }
           const chromeBinaryPath = await helpers.prepareChromeForTesting(forceRedownload);
           
-          // 尝试多种方式设置自定义 Chrome 路径
           console.log(`✅ 准备使用 Chrome for Testing: ${chromeBinaryPath}`);
           
-          // 方法1: 修改 browser 对象
-          browser.path = chromeBinaryPath;
-          
-          // 方法2: 通过 arguments 设置
-          arguments_.args.push(`--chrome-binary=${chromeBinaryPath}`);
-          
-          // 方法3: 设置环境变量
+          // 注意：在 before:browser:launch 中无法直接设置自定义浏览器路径
+          // 正确的方式是通过命令行参数 --browser 来指定
+          // 这里我们只能设置环境变量，供其他工具使用
           process.env.CHROME_BIN = chromeBinaryPath;
+          process.env.CHROME_FOR_TESTING_PATH = chromeBinaryPath;
+          
+          console.log(`⚠️  注意：在 before:browser:launch 中无法直接设置自定义浏览器路径`);
+          console.log(`💡 建议：使用命令行参数 --browser "${chromeBinaryPath}" 来指定 Chrome for Testing`);
+          console.log(`🔧 已设置环境变量 CHROME_BIN: ${chromeBinaryPath}`);
           
           console.log(`🔍 Browser 对象信息:`, {
             name: browser.name,
@@ -45,10 +45,9 @@ module.exports = (on, config) => {
             isHeadless: browser.isHeadless
           });
           
-          console.log(`🔍 Arguments 信息:`, {
-            executablePath: arguments_.executablePath,
-            args: arguments_.args.filter(arg => arg.includes('chrome-binary')),
-            extensions: arguments_.extensions.length
+          console.log(`🔍 LaunchOptions 信息:`, {
+            extensions: arguments_.extensions.length,
+            args: arguments_.args.length
           });
         } catch (error) {
           console.warn(`⚠️  Chrome for Testing 准备失败: ${error.message}`);
