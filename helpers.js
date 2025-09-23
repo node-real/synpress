@@ -284,7 +284,7 @@ module.exports = {
   async getChromeForTestingInfo() {
     const platform = os.platform();
     // 使用一个更稳定的版本，确保支持扩展加载
-    const version = process.env.CHROME_FOR_TESTING_VERSION || '120.0.6099.109';
+    const version = process.env.CHROME_FOR_TESTING_VERSION || '136.0.7103.49';
     
     const platformMap = {
       'win32': 'win32',
