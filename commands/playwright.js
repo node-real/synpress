@@ -58,8 +58,14 @@ module.exports = {
     return activeTabName;
   },
   async metamaskExtensionId() {
-    const metamaskExtensionData = (await module.exports.getExtensionsData())
-      .metamask;
+    const extensionsData = await module.exports.getExtensionsData();
+    console.log('Available extensions:', Object.keys(extensionsData));
+    
+    const metamaskExtensionData = extensionsData.metamask;
+    if (!metamaskExtensionData) {
+      throw new Error(`MetaMask extension not found in extensions list. Available extensions: ${Object.keys(extensionsData).join(', ')}`);
+    }
+    
     return metamaskExtensionData.id;
   },
   async setExpectInstance(expect) {
@@ -456,6 +462,7 @@ module.exports = {
       return extensionsData;
     }
 
+    console.log('Getting extensions data from chrome://extensions...');
     const context = await browser.contexts()[0];
     const page = await context.newPage();
 
@@ -469,32 +476,41 @@ module.exports = {
     await devModeButton.click();
 
     const extensionDataItems = await page.locator('extensions-item').all();
+    console.log(`Found ${extensionDataItems.length} extensions`);
+    
     for (const extensionData of extensionDataItems) {
-      const extensionName = (
-        await extensionData
-          .locator('#name-and-version')
-          .locator('#name')
-          .textContent()
-      ).toLowerCase();
+      try {
+        const extensionName = (
+          await extensionData
+            .locator('#name-and-version')
+            .locator('#name')
+            .textContent()
+        ).toLowerCase();
 
-      const extensionVersion = (
-        await extensionData
-          .locator('#name-and-version')
-          .locator('#version')
-          .textContent()
-      ).replace(/(\n| )/g, '');
+        const extensionVersion = (
+          await extensionData
+            .locator('#name-and-version')
+            .locator('#version')
+            .textContent()
+        ).replace(/(\n| )/g, '');
 
-      const extensionId = (
-        await extensionData.locator('#extension-id').textContent()
-      ).split(': ')[1];
+        const extensionId = (
+          await extensionData.locator('#extension-id').textContent()
+        ).split(': ')[1];
 
-      extensionsData[extensionName] = {
-        version: extensionVersion,
-        id: extensionId,
-      };
+        console.log(`Found extension: ${extensionName} (${extensionVersion}) - ID: ${extensionId}`);
+
+        extensionsData[extensionName] = {
+          version: extensionVersion,
+          id: extensionId,
+        };
+      } catch (error) {
+        console.log(`Error processing extension: ${error.message}`);
+      }
     }
     await page.close();
 
+    console.log('Final extensions data:', Object.keys(extensionsData));
     return extensionsData;
   },
 

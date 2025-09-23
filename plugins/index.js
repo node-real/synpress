@@ -51,7 +51,11 @@ module.exports = (on, config) => {
       const metamaskPath = await helpers.prepareMetamask(
         process.env.METAMASK_VERSION || '11.15.0',
       );
+      console.log(`Adding MetaMask extension from path: ${metamaskPath}`);
       arguments_.extensions.push(metamaskPath);
+      console.log(`Total extensions to load: ${arguments_.extensions.length}`);
+    } else {
+      console.log('Skipping MetaMask installation due to SKIP_METAMASK_INSTALL environment variable');
     }
 
     return arguments_;
