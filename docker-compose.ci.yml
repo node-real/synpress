@@ -14,6 +14,9 @@ services:
       - GH_PAT=${GH_PAT}
       - GH_USERNAME=${GH_USERNAME}
       - CI=${CI}
+      # Chrome for Testing configuration
+      - USE_CHROME_FOR_TESTING=true
+      - CHROME_FOR_TESTING_VERSION=140.0.7339.185
       # cypress dashboard
       - CYPRESS_GROUP=${CYPRESS_GROUP}
       - GITHUB_TOKEN=${GITHUB_TOKEN}

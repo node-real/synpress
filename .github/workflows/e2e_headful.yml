@@ -55,6 +55,15 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --prefer-offline
 
+      - name: Setup Chrome for Testing
+        run: |
+          echo "🔧 Setting up Chrome for Testing..."
+          pnpm run chrome:download
+          echo "✅ Chrome for Testing setup complete"
+        env:
+          CHROME_FOR_TESTING_VERSION: 140.0.7339.185
+          USE_CHROME_FOR_TESTING: true
+
       - name: Install linux deps
         run: |
           sudo apt-get install --no-install-recommends -y \
@@ -72,6 +81,9 @@ jobs:
           GH_PAT: ${{ secrets.GH_PAT }}
           GH_USERNAME: ${{ secrets.GH_USERNAME }}
           DISPLAY: :0.0
+          # Chrome for Testing configuration
+          USE_CHROME_FOR_TESTING: true
+          CHROME_FOR_TESTING_VERSION: 140.0.7339.185
 
       - name: Archive e2e artifacts
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # pin@v2

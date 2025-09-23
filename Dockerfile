@@ -15,4 +15,15 @@ FROM base as test
 
 RUN pnpm install --frozen-lockfile --prefer-offline
 
+# Install Chrome for Testing dependencies
+RUN apt-get update && apt-get install -y \
+    wget \
+    unzip \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY . .
+
+# Setup Chrome for Testing
+RUN echo "🔧 Setting up Chrome for Testing in Docker..." && \
+    pnpm run chrome:download && \
+    echo "✅ Chrome for Testing setup complete"

@@ -8,6 +8,7 @@ const packageJson = require('./package.json');
 const chains = require('viem/chains');
 const appRoot = require('app-root-path');
 const os = require('os');
+const AdmZip = require('adm-zip');
 
 let currentNetwork = chains.mainnet;
 // list of added networks to metamask
@@ -242,5 +243,153 @@ module.exports = {
       log('Metamask is already downloaded');
     }
     return metamaskDirectory;
+  },
+
+  // Chrome for Testing 相关函数
+  async getChromeForTestingInfo() {
+    const platform = os.platform();
+    const version = process.env.CHROME_FOR_TESTING_VERSION || '140.0.7339.185';
+    
+    const platformMap = {
+      'win32': 'win32',
+      'darwin': 'mac-x64', // 可以根据需要添加 mac-arm64
+      'linux': 'linux64'
+    };
+
+    const platformName = platformMap[platform];
+    if (!platformName) {
+      throw new Error(`Unsupported platform: ${platform}`);
+    }
+
+    const downloadUrl = `https://storage.googleapis.com/chrome-for-testing-public/${version}/${platformName}/chrome-${platformName}.zip`;
+    const filename = `chrome-${platformName}.zip`;
+    const tagName = `chrome-for-testing-${version}-${platformName}`;
+
+    log(`Chrome for Testing info - Platform: ${platformName}, Version: ${version}, URL: ${downloadUrl}`);
+
+    return {
+      filename,
+      downloadUrl,
+      tagName,
+      platform: platformName,
+      version
+    };
+  },
+
+  async downloadChromeForTesting() {
+    const chromeInfo = await module.exports.getChromeForTestingInfo();
+    
+    let downloadsDirectory;
+    if (os.platform() === 'win32') {
+      downloadsDirectory = appRoot.resolve('/node_modules');
+    } else {
+      downloadsDirectory = path.resolve(__dirname, 'downloads');
+    }
+
+    await module.exports.createDirIfNotExist(downloadsDirectory);
+    const chromeDirectory = path.join(downloadsDirectory, chromeInfo.tagName);
+    const chromeDirectoryExists = await module.exports.checkDirOrFileExist(chromeDirectory);
+    
+    // 检查 Chrome 二进制文件是否存在
+    const chromeBinaryPath = module.exports.getChromeBinaryPath(chromeDirectory, chromeInfo.platform);
+    const chromeBinaryExists = await module.exports.checkDirOrFileExist(chromeBinaryPath);
+
+    if (!chromeDirectoryExists || !chromeBinaryExists) {
+      log(`Downloading Chrome for Testing ${chromeInfo.version} for ${chromeInfo.platform}...`);
+      
+      // 下载 ZIP 文件
+      const zipPath = path.join(downloadsDirectory, chromeInfo.filename);
+      await module.exports.downloadFile(chromeInfo.downloadUrl, zipPath);
+      
+      // 解压 ZIP 文件
+      await module.exports.extractZip(zipPath, chromeDirectory);
+      
+      // 删除 ZIP 文件
+      try {
+        await fs.unlink(zipPath);
+        log(`Cleaned up downloaded ZIP file: ${zipPath}`);
+      } catch (error) {
+        log(`Warning: Could not delete ZIP file ${zipPath}: ${error.message}`);
+      }
+      
+      log(`Chrome for Testing downloaded and extracted to: ${chromeDirectory}`);
+    } else {
+      log('Chrome for Testing is already downloaded');
+    }
+
+    return chromeDirectory;
+  },
+
+  getChromeBinaryPath(chromeDirectory, platform) {
+    const binaryMap = {
+      'win32': path.join(chromeDirectory, 'chrome-win32', 'chrome.exe'),
+      'mac-x64': path.join(chromeDirectory, 'chrome-mac-x64', 'Google Chrome for Testing.app', 'Contents', 'MacOS', 'Google Chrome for Testing'),
+      'mac-arm64': path.join(chromeDirectory, 'chrome-mac-arm64', 'Google Chrome for Testing.app', 'Contents', 'MacOS', 'Google Chrome for Testing'),
+      'linux64': path.join(chromeDirectory, 'chrome-linux64', 'chrome')
+    };
+
+    return binaryMap[platform];
+  },
+
+  async downloadFile(url, destination) {
+    try {
+      log(`Downloading file from: ${url} to: ${destination}`);
+      
+      const response = await axios({
+        method: 'GET',
+        url: url,
+        responseType: 'stream',
+        timeout: 300000 // 5 minutes timeout
+      });
+
+      const writer = require('fs').createWriteStream(destination);
+      response.data.pipe(writer);
+
+      return new Promise((resolve, reject) => {
+        writer.on('finish', () => {
+          log(`File downloaded successfully: ${destination}`);
+          resolve();
+        });
+        writer.on('error', (error) => {
+          log(`Error writing file: ${error.message}`);
+          reject(error);
+        });
+      });
+    } catch (error) {
+      throw new Error(`Failed to download file from ${url}: ${error.message}`);
+    }
+  },
+
+  async extractZip(zipPath, extractTo) {
+    try {
+      log(`Extracting ZIP file: ${zipPath} to: ${extractTo}`);
+      
+      const zip = new AdmZip(zipPath);
+      zip.extractAllTo(extractTo, true);
+      
+      log(`ZIP file extracted successfully to: ${extractTo}`);
+    } catch (error) {
+      throw new Error(`Failed to extract ZIP file ${zipPath}: ${error.message}`);
+    }
+  },
+
+  async prepareChromeForTesting() {
+    try {
+      const chromeDirectory = await module.exports.downloadChromeForTesting();
+      const chromeInfo = await module.exports.getChromeForTestingInfo();
+      const chromeBinaryPath = module.exports.getChromeBinaryPath(chromeDirectory, chromeInfo.platform);
+      
+      // 验证二进制文件是否存在
+      const binaryExists = await module.exports.checkDirOrFileExist(chromeBinaryPath);
+      if (!binaryExists) {
+        throw new Error(`Chrome binary not found at: ${chromeBinaryPath}`);
+      }
+
+      log(`Chrome for Testing ready at: ${chromeBinaryPath}`);
+      return chromeBinaryPath;
+    } catch (error) {
+      log(`Error preparing Chrome for Testing: ${error.message}`);
+      throw error;
+    }
   },
 };

@@ -260,6 +260,36 @@ For example: `synpress run --configFile __tests__/e2e/customConfig.config.js`
 
 ## ⚡ Important notes
 
+### Chrome v137+ Compatibility Issue
+
+**⚠️ Important**: Chrome v137 and higher no longer supports loading extensions via `--load-extension` parameter. This affects MetaMask extension loading in tests.
+
+**Solution**: We've integrated Chrome for Testing support to resolve this issue:
+
+```bash
+# Download Chrome for Testing
+npm run chrome:download
+
+# Or use the setup script
+npm run chrome:setup
+
+# Check status
+npm run chrome:status
+```
+
+**Environment Variables**:
+```bash
+# Enable Chrome for Testing (default: true)
+export USE_CHROME_FOR_TESTING=true
+
+# Specify Chrome version (default: 140.0.7339.185)
+export CHROME_FOR_TESTING_VERSION=140.0.7339.185
+```
+
+For more details, see [Chrome for Testing Guide](./CHROME_FOR_TESTING.md).
+
+### Other Important Notes
+
 Synpress doesn't seem to communicate with metamask properly if
 `"chromeWebSecurity": false` flag is set. More about it
 [here](https://github.com/Synthetixio/synpress/issues/17).

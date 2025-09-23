@@ -12,6 +12,21 @@ module.exports = (on, config) => {
 
   on('before:browser:launch', async (browser = {}, arguments_) => {
     if (browser.name === 'chrome') {
+      // 检查是否使用 Chrome for Testing
+      const useChromeForTesting = process.env.USE_CHROME_FOR_TESTING !== 'false';
+      
+      if (useChromeForTesting) {
+        try {
+          console.log('🔧 准备 Chrome for Testing...');
+          const chromeBinaryPath = await helpers.prepareChromeForTesting();
+          arguments_.executablePath = chromeBinaryPath;
+          console.log(`✅ 使用 Chrome for Testing: ${chromeBinaryPath}`);
+        } catch (error) {
+          console.warn(`⚠️  Chrome for Testing 准备失败: ${error.message}`);
+          console.warn('⚠️  回退到系统 Chrome，可能不支持扩展加载');
+        }
+      }
+
       // metamask welcome screen blocks cypress from loading
       arguments_.args.push(
         '--disable-background-timer-throttling',
