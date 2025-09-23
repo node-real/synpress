@@ -18,7 +18,13 @@ module.exports = (on, config) => {
       if (useChromeForTesting) {
         try {
           console.log('🔧 准备 Chrome for Testing...');
-          const chromeBinaryPath = await helpers.prepareChromeForTesting();
+          process.env.FORCE_REDOWNLOAD_CHROME = true
+          // 检查是否需要强制重新下载 Chrome
+          const forceRedownload = process.env.FORCE_REDOWNLOAD_CHROME === 'true';
+          if (forceRedownload) {
+            console.log('🔄 强制重新下载 Chrome for Testing...');
+          }
+          const chromeBinaryPath = await helpers.prepareChromeForTesting(forceRedownload);
           // 通过修改 browser 对象来指定自定义 Chrome 路径
           browser.path = chromeBinaryPath;
           console.log(`✅ 使用 Chrome for Testing: ${chromeBinaryPath}`);
@@ -52,8 +58,20 @@ module.exports = (on, config) => {
         process.env.METAMASK_VERSION || '11.15.0',
       );
       console.log(`Adding MetaMask extension from path: ${metamaskPath}`);
+      
+      // 验证扩展路径是否存在
+      const fs = require('fs');
+      try {
+        const stats = fs.statSync(metamaskPath);
+        console.log(`MetaMask extension path exists: ${stats.isDirectory() ? 'directory' : 'file'}`);
+      } catch (error) {
+        console.error(`MetaMask extension path does not exist: ${metamaskPath}`);
+        throw error;
+      }
+      
       arguments_.extensions.push(metamaskPath);
       console.log(`Total extensions to load: ${arguments_.extensions.length}`);
+      console.log(`Extensions array:`, arguments_.extensions);
     } else {
       console.log('Skipping MetaMask installation due to SKIP_METAMASK_INSTALL environment variable');
     }

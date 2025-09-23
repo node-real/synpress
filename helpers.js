@@ -260,13 +260,31 @@ module.exports = {
     } else {
       log('Metamask is already downloaded');
     }
+    
+    // 验证扩展目录和 manifest.json 文件
+    const finalManifestPath = path.join(metamaskDirectory, 'manifest.json');
+    const manifestExists = await module.exports.checkDirOrFileExist(finalManifestPath);
+    log(`MetaMask manifest.json exists: ${manifestExists} at ${finalManifestPath}`);
+    
+    if (manifestExists) {
+      try {
+        const manifestContent = await fs.readFile(finalManifestPath, 'utf8');
+        const manifest = JSON.parse(manifestContent);
+        log(`MetaMask manifest version: ${manifest.version}`);
+        log(`MetaMask manifest name: ${manifest.name}`);
+      } catch (error) {
+        log(`Error reading manifest: ${error.message}`);
+      }
+    }
+    
     return metamaskDirectory;
   },
 
   // Chrome for Testing 相关函数
   async getChromeForTestingInfo() {
     const platform = os.platform();
-    const version = process.env.CHROME_FOR_TESTING_VERSION || '136.0.7103.49';
+    // 使用一个更稳定的版本，确保支持扩展加载
+    const version = process.env.CHROME_FOR_TESTING_VERSION || '120.0.6099.109';
     
     const platformMap = {
       'win32': 'win32',
@@ -294,7 +312,7 @@ module.exports = {
     };
   },
 
-  async downloadChromeForTesting() {
+  async downloadChromeForTesting(forceRedownload = false) {
     const chromeInfo = await module.exports.getChromeForTestingInfo();
     
     let downloadsDirectory;
@@ -312,7 +330,20 @@ module.exports = {
     const chromeBinaryPath = module.exports.getChromeBinaryPath(chromeDirectory, chromeInfo.platform);
     const chromeBinaryExists = await module.exports.checkDirOrFileExist(chromeBinaryPath);
 
-    if (!chromeDirectoryExists || !chromeBinaryExists) {
+    if (forceRedownload || !chromeDirectoryExists || !chromeBinaryExists) {
+      if (forceRedownload) {
+        log(`Force redownloading Chrome for Testing...`);
+        // 清理现有目录
+        try {
+          if (chromeDirectoryExists) {
+            await fs.rm(chromeDirectory, { recursive: true, force: true });
+            log(`Cleaned up existing Chrome directory: ${chromeDirectory}`);
+          }
+        } catch (error) {
+          log(`Warning: Could not clean up Chrome directory: ${error.message}`);
+        }
+      }
+      
       log(`Downloading Chrome for Testing ${chromeInfo.version} for ${chromeInfo.platform}...`);
       
       // 下载 ZIP 文件
@@ -391,19 +422,23 @@ module.exports = {
     }
   },
 
-  async prepareChromeForTesting() {
+  async prepareChromeForTesting(forceRedownload = false) {
     try {
-      const chromeDirectory = await module.exports.downloadChromeForTesting();
+      const chromeDirectory = await module.exports.downloadChromeForTesting(forceRedownload);
       const chromeInfo = await module.exports.getChromeForTestingInfo();
       const chromeBinaryPath = module.exports.getChromeBinaryPath(chromeDirectory, chromeInfo.platform);
       
       // 验证二进制文件是否存在
       const binaryExists = await module.exports.checkDirOrFileExist(chromeBinaryPath);
       if (!binaryExists) {
+        log(`Chrome binary not found, this might be a version compatibility issue`);
+        log(`Chrome path: ${chromeBinaryPath}`);
+        log(`Chrome directory: ${chromeDirectory}`);
         throw new Error(`Chrome binary not found at: ${chromeBinaryPath}`);
       }
 
       log(`Chrome for Testing ready at: ${chromeBinaryPath}`);
+      log(`Chrome version: ${chromeInfo.version}`);
       return chromeBinaryPath;
     } catch (error) {
       log(`Error preparing Chrome for Testing: ${error.message}`);
