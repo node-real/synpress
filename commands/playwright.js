@@ -59,8 +59,6 @@ module.exports = {
   },
   async metamaskExtensionId() {
     const extensionsData = await module.exports.getExtensionsData();
-    console.log('Available extensions:', Object.keys(extensionsData));
-    console.log('Available extensions (with quotes):', Object.keys(extensionsData).map(key => `"${key}"`));
     
     const metamaskExtensionData = extensionsData.metamask;
     if (!metamaskExtensionData) {
@@ -70,11 +68,10 @@ module.exports = {
       );
       
       if (metamaskKey) {
-        console.log(`Found MetaMask with key: "${metamaskKey}"`);
         return extensionsData[metamaskKey].id;
       }
       
-      throw new Error(`MetaMask extension not found in extensions list. Available extensions: ${Object.keys(extensionsData).map(key => `"${key}"`).join(', ')}`);
+      throw new Error(`MetaMask extension not found in extensions list. Available extensions: ${Object.keys(extensionsData).join(', ')}`);
     }
     
     return metamaskExtensionData.id;
@@ -191,56 +188,90 @@ module.exports = {
     return true;
   },
   async switchToMetamaskNotification() {
-    const metamaskExtensionId = await module.exports.metamaskExtensionId();
+    try {
+      const metamaskExtensionId = await module.exports.metamaskExtensionId();
 
-    let pages = await browser.contexts()[0].pages();
-    for (const page of pages) {
-      if (
-        page
-          .url()
-          .includes(
-            `chrome-extension://${metamaskExtensionId}/notification.html`,
-          )
-      ) {
-        metamaskNotificationWindow = page;
-        retries = 0;
-        await page.bringToFront();
-        await module.exports.waitUntilStable(page);
-        await module.exports.waitFor(
-          notificationPageElements.notificationAppContent,
-          page,
-        );
-        return page;
+      let pages = await browser.contexts()[0].pages();
+      for (const page of pages) {
+        if (page.isClosed()) {
+          continue;
+        }
+        
+        if (
+          page
+            .url()
+            .includes(
+              `chrome-extension://${metamaskExtensionId}/notification.html`,
+            )
+        ) {
+          metamaskNotificationWindow = page;
+          retries = 0;
+          await page.bringToFront();
+          await module.exports.waitUntilStable(page);
+          await module.exports.waitFor(
+            notificationPageElements.notificationAppContent,
+            page,
+          );
+          return page;
+        }
       }
-    }
-    await sleep(200);
-    if (retries < 50) {
-      retries++;
-      return await module.exports.switchToMetamaskNotification();
-    } else if (retries >= 50) {
-      retries = 0;
-      throw new Error(
-        '[switchToMetamaskNotification] Max amount of retries to switch to metamask notification window has been reached. It was never found.',
-      );
+      await sleep(200);
+      if (retries < 50) {
+        retries++;
+        return await module.exports.switchToMetamaskNotification();
+      } else if (retries >= 50) {
+        retries = 0;
+        throw new Error(
+          '[switchToMetamaskNotification] Max amount of retries to switch to metamask notification window has been reached. It was never found.',
+        );
+      }
+    } catch (error) {
+      if (error.message.includes('Target page, context or browser has been closed')) {
+        console.log('Browser/context closed during switchToMetamaskNotification, retrying...');
+        await sleep(1000);
+        if (retries < 10) {
+          retries++;
+          return await module.exports.switchToMetamaskNotification();
+        }
+      }
+      throw error;
     }
   },
   async waitFor(selector, page = metamaskWindow) {
-    await module.exports.waitUntilStable(page);
-    await page.waitForSelector(selector, { strict: false });
-    const element = page.locator(selector).first();
-    await element.waitFor();
-    await element.focus();
-    if (process.env.STABLE_MODE) {
-      if (!isNaN(process.env.STABLE_MODE)) {
-        await page.waitForTimeout(Number(process.env.STABLE_MODE));
-      } else {
-        await page.waitForTimeout(300);
+    try {
+      if (page.isClosed()) {
+        console.log('Page is closed, skipping waitFor');
+        return null;
       }
+      
+      await module.exports.waitUntilStable(page);
+      await page.waitForSelector(selector, { strict: false });
+      const element = page.locator(selector).first();
+      await element.waitFor();
+      await element.focus();
+      if (process.env.STABLE_MODE) {
+        if (!isNaN(process.env.STABLE_MODE)) {
+          await page.waitForTimeout(Number(process.env.STABLE_MODE));
+        } else {
+          await page.waitForTimeout(300);
+        }
+      }
+      return element;
+    } catch (error) {
+      if (error.message.includes('Target page, context or browser has been closed')) {
+        console.log('Page/browser closed during waitFor, skipping');
+        return null;
+      }
+      throw error;
     }
-    return element;
   },
   async waitAndClick(selector, page = metamaskWindow, args = {}) {
     const element = await module.exports.waitFor(selector, page);
+    if (!element) {
+      console.log('Element not found or page closed, skipping waitAndClick');
+      return;
+    }
+    
     if (args.numberOfClicks && !args.waitForEvent) {
       await element.click({
         clickCount: args.numberOfClicks,
@@ -359,19 +390,35 @@ module.exports = {
   },
   async waitToBeHidden(selector, page = metamaskWindow) {
     // info: waits for 60 seconds
-    const locator = page.locator(selector);
-    for (const element of await locator.all()) {
-      if ((await element.count()) > 0 && retries < 300) {
-        retries++;
-        await page.waitForTimeout(200);
-        await module.exports.waitToBeHidden(selector, page);
-      } else if (retries >= 300) {
-        retries = 0;
-        throw new Error(
-          `[waitToBeHidden] Max amount of retries reached while waiting for ${selector} to disappear.`,
-        );
+    try {
+      // 检查页面是否仍然有效
+      if (page.isClosed()) {
+        console.log('Page is closed, skipping waitToBeHidden');
+        return;
       }
-      retries = 0;
+      
+      const locator = page.locator(selector);
+      const elements = await locator.all();
+      
+      for (const element of elements) {
+        if ((await element.count()) > 0 && retries < 300) {
+          retries++;
+          await page.waitForTimeout(200);
+          await module.exports.waitToBeHidden(selector, page);
+        } else if (retries >= 300) {
+          retries = 0;
+          throw new Error(
+            `[waitToBeHidden] Max amount of retries reached while waiting for ${selector} to disappear.`,
+          );
+        }
+        retries = 0;
+      }
+    } catch (error) {
+      if (error.message.includes('Target page, context or browser has been closed')) {
+        console.log('Page/browser closed during waitToBeHidden, skipping');
+        return;
+      }
+      throw error;
     }
   },
   async waitUntilStable(page) {
@@ -496,7 +543,6 @@ module.exports = {
     await devModeButton.click();
 
     const extensionDataItems = await page.locator('extensions-item').all();
-    console.log(`Found ${extensionDataItems.length} extensions`);
     
     for (const extensionData of extensionDataItems) {
       try {
@@ -518,19 +564,15 @@ module.exports = {
           await extensionData.locator('#extension-id').textContent()
         ).trim().split(': ')[1];
 
-        console.log(`Found extension: ${extensionName} (${extensionVersion}) - ID: ${extensionId}`);
-
         extensionsData[extensionName] = {
           version: extensionVersion,
           id: extensionId,
         };
       } catch (error) {
-        console.log(`Error processing extension: ${error.message}`);
+        // 静默处理扩展解析错误
       }
     }
     await page.close();
-
-    console.log('Final extensions data:', Object.keys(extensionsData));
     return extensionsData;
   },
 
