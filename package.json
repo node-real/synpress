@@ -1,6 +1,6 @@
 {
   "name": "@gracefnr/synpress",
-  "version": "1.0.21",
+  "version": "1.0.22",
   "packageManager": "pnpm@9.1.3",
   "description": "Synpress is e2e testing framework based around Cypress.io & playwright with included MetaMask support. Test your dapps with ease.",
   "keywords": [
@@ -41,7 +41,7 @@
     "release:patch": "release-it patch --disable-metrics",
     "update:deps": "ncu -u -x 'node-fetch' && pnpm install",
     "start:server": "serve node_modules/@metamask/test-dapp/dist -p 3000",
-    "synpress:run": "SKIP_METAMASK_SETUP=true SYNPRESS_LOCAL_TEST=true node synpress.js run --config-file=synpress.config.js",
+    "synpress:run": "SKIP_METAMASK_SETUP=true SYNPRESS_LOCAL_TEST=true node synpress.js run --configFile=synpress.config.js",
     "test:e2e": "start-server-and-test 'turbo start:server' http-get://localhost:3000 'pnpm synpress:run'",
     "test:e2e:anvil": "start-server-and-test 'turbo start:server' http-get://localhost:3000 'CYPRESS_USE_ANVIL=true pnpm synpress:run'",
     "test:e2e:headless": "start-server-and-test 'turbo start:server' http-get://localhost:3000 'pnpm synpress:run --headless'",

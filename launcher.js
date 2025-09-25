@@ -23,10 +23,10 @@ const launcher = {
   async run(arguments_) {
     if (arguments_.configFile) {
       log(`Custom config file arg detected: ${arguments_.configFile}`);
-      defaultArguments.push(`--config-file=${arguments_.configFile}`);
+      defaultArguments.push(`--configFile=${arguments_.configFile}`);
     } else {
       log('Using default config file');
-      defaultArguments.push(`--config-file=${synpressConfigPath}`);
+      defaultArguments.push(`--configFile=${synpressConfigPath}`);
     }
     log(`Tests will run on ${arguments_.browser} browser`);
     defaultArguments.push(`--browser=${arguments_.browser}`);
