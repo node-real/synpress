@@ -1555,12 +1555,28 @@ const metamask = {
     log('[initialSetup] Extension details retrieved');
     
     log('[initialSetup] Calling fixBlankPage...');
-    await playwright.fixBlankPage();
-    log('[initialSetup] fixBlankPage completed');
+    
+    // 检查 metamaskWindow 是否可用
+    const metamaskWindow = await playwright.metamaskWindow();
+    if (metamaskWindow) {
+      log('[initialSetup] metamaskWindow is available, calling fixBlankPage...');
+      await playwright.fixBlankPage(metamaskWindow);
+      log('[initialSetup] fixBlankPage completed');
+    } else {
+      log('[initialSetup] WARNING: metamaskWindow is not available, skipping fixBlankPage');
+    }
     
     log('[initialSetup] Calling fixCriticalError...');
-    await playwright.fixCriticalError();
-    log('[initialSetup] fixCriticalError completed');
+    
+    // 检查 metamaskWindow 是否可用
+    const metamaskWindowForError = await playwright.metamaskWindow();
+    if (metamaskWindowForError) {
+      log('[initialSetup] metamaskWindow is available, calling fixCriticalError...');
+      await playwright.fixCriticalError(metamaskWindowForError);
+      log('[initialSetup] fixCriticalError completed');
+    } else {
+      log('[initialSetup] WARNING: metamaskWindow is not available, skipping fixCriticalError');
+    }
     if (
       (await playwright
         .metamaskWindow()
