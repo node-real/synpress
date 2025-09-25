@@ -243,6 +243,60 @@ module.exports = (on, config) => {
       await etherscan.getTransactionStatus(txid),
     etherscanWaitForTxSuccess: async ({ txid }) =>
       await etherscan.waitForTxSuccess(txid),
+    uploadVideo: async (videoPath) => {
+      const fs = require('fs');
+      const path = require('path');
+      const FormData = require('form-data');
+      const fetch = require('node-fetch');
+      
+      try {
+        // Check if video file exists
+        const fullPath = path.resolve(videoPath);
+        if (!fs.existsSync(fullPath)) {
+          throw new Error(`Video file not found: ${fullPath}`);
+        }
+        
+        console.log(`📹 Uploading video: ${fullPath}`);
+        
+        // Create form data
+        const form = new FormData();
+        form.append('file', fs.createReadStream(fullPath));
+        
+        // Upload to transfer.toolsfdg.net
+        const response = await fetch('https://transfer.toolsfdg.net/video', {
+          method: 'POST',
+          body: form,
+          headers: form.getHeaders()
+        });
+        
+        const result = await response.text();
+        
+        if (response.ok) {
+          console.log(`✅ Video uploaded successfully: ${result}`);
+          return {
+            success: true,
+            url: result,
+            status: response.status,
+            message: 'Video uploaded successfully'
+          };
+        } else {
+          console.error(`❌ Video upload failed: ${response.status} - ${result}`);
+          return {
+            success: false,
+            status: response.status,
+            error: result,
+            message: 'Video upload failed'
+          };
+        }
+      } catch (error) {
+        console.error(`❌ Video upload error: ${error.message}`);
+        return {
+          success: false,
+          error: error.message,
+          message: 'Video upload error'
+        };
+      }
+    },
   });
 
   if (process.env.BASE_URL) {

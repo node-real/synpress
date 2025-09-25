@@ -419,3 +419,8 @@ Cypress.Commands.add(
     return subject;
   },
 );
+
+// Video upload command
+Cypress.Commands.add('uploadVideo', (videoPath) => {
+  return cy.task('uploadVideo', videoPath);
+});
