@@ -7,7 +7,28 @@ declare namespace Cypress {
                    tokenName?: string
     }): Chainable<boolean>;
 
-    metamaskScreenshot(path: string): Chainable<boolean>;
+    /**
+     * Take a screenshot of MetaMask and automatically upload it
+     * @example
+     * cy.metamaskScreenshot('path/to/screenshot.png').then(result => {
+     *   if (result.uploadResult && result.uploadResult.success) {
+     *     console.log('Screenshot uploaded:', result.uploadResult.url);
+     *   }
+     * });
+     */
+    metamaskScreenshot(path: string): Chainable<{
+      success: boolean;
+      screenshotPath: string;
+      uploadResult?: {
+        success: boolean;
+        url?: string;
+        status?: number;
+        error?: string;
+        message: string;
+      };
+      uploadError?: string;
+      message: string;
+    }>;
 
     /**
      * Connect playwright with Cypress instance
@@ -523,5 +544,37 @@ declare namespace Cypress {
       viewportWidth: number,
       viewportHeight: number,
     ): Chainable<Subject>;
+    /**
+     * Upload a screenshot file manually
+     * @example
+     * cy.uploadScreenshot('path/to/screenshot.png').then(result => {
+     *   if (result.success) {
+     *     console.log('Uploaded:', result.url);
+     *   }
+     * });
+     */
+    uploadScreenshot(path: string): Chainable<{
+      success: boolean;
+      url?: string;
+      status?: number;
+      error?: string;
+      message: string;
+    }>;
+    /**
+     * Upload a video file
+     * @example
+     * cy.uploadVideo('path/to/video.mp4').then(result => {
+     *   if (result.success) {
+     *     console.log('Uploaded:', result.url);
+     *   }
+     * });
+     */
+    uploadVideo(path: string): Chainable<{
+      success: boolean;
+      url?: string;
+      status?: number;
+      error?: string;
+      message: string;
+    }>;
   }
 }

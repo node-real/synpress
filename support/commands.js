@@ -424,3 +424,8 @@ Cypress.Commands.add(
 Cypress.Commands.add('uploadVideo', (videoPath) => {
   return cy.task('uploadVideo', videoPath);
 });
+
+// Screenshot upload command
+Cypress.Commands.add('uploadScreenshot', (screenshotPath) => {
+  return cy.task('uploadScreenshot', screenshotPath);
+});

