@@ -58,24 +58,41 @@ module.exports = {
     return activeTabName;
   },
   async metamaskExtensionId() {
-    const extensionsData = await module.exports.getExtensionsData();
+    log('[metamaskExtensionId] Starting to get MetaMask extension ID...');
     
-    const metamaskExtensionData = extensionsData.metamask;
-    if (!metamaskExtensionData) {
-      // 尝试查找包含 "metamask" 的扩展
-      const metamaskKey = Object.keys(extensionsData).find(key => 
-        key.toLowerCase().includes('metamask')
-      );
+    try {
+      const extensionsData = await module.exports.getExtensionsData();
+      log(`[metamaskExtensionId] Extensions data keys: ${Object.keys(extensionsData).join(', ')}`);
       
-      if (metamaskKey) {
-        console.log(`Found MetaMask with key: "${metamaskKey}"`);
-        return extensionsData[metamaskKey].id;
+      const metamaskExtensionData = extensionsData.metamask;
+      if (!metamaskExtensionData) {
+        log('[metamaskExtensionId] MetaMask not found with exact key "metamask", searching for similar keys...');
+        
+        // 尝试查找包含 "metamask" 的扩展
+        const metamaskKey = Object.keys(extensionsData).find(key => 
+          key.toLowerCase().includes('metamask')
+        );
+        
+        if (metamaskKey) {
+          log(`[metamaskExtensionId] Found MetaMask with key: "${metamaskKey}"`);
+          const extensionId = extensionsData[metamaskKey].id;
+          log(`[metamaskExtensionId] MetaMask extension ID: ${extensionId}`);
+          return extensionId;
+        }
+        
+        const availableExtensions = Object.keys(extensionsData).map(key => `"${key}"`).join(', ');
+        log(`[metamaskExtensionId] ERROR: MetaMask extension not found. Available extensions: ${availableExtensions}`);
+        throw new Error(`MetaMask extension not found in extensions list. Available extensions: ${availableExtensions}`);
       }
       
-      throw new Error(`MetaMask extension not found in extensions list. Available extensions: ${Object.keys(extensionsData).map(key => `"${key}"`).join(', ')}`);
+      const extensionId = metamaskExtensionData.id;
+      log(`[metamaskExtensionId] MetaMask extension ID: ${extensionId}`);
+      return extensionId;
+    } catch (error) {
+      log(`[metamaskExtensionId] ERROR: ${error.message}`);
+      log(`[metamaskExtensionId] ERROR stack: ${error.stack}`);
+      throw error;
     }
-    
-    return metamaskExtensionData.id;
   },
   async setExpectInstance(expect) {
     expectInstance = expect;
@@ -116,35 +133,86 @@ module.exports = {
     return true;
   },
   async assignWindows() {
-    const metamaskExtensionId = await module.exports.metamaskExtensionId();
+    log('[assignWindows] Starting window assignment...');
+    
+    try {
+      const metamaskExtensionId = await module.exports.metamaskExtensionId();
+      log(`[assignWindows] MetaMask Extension ID: ${metamaskExtensionId}`);
 
-    let pages = await browser.contexts()[0].pages();
-    for (const page of pages) {
-      if (page.url().includes('specs/runner')) {
-        mainWindow = page;
-      } else if (
-        page
-          .url()
-          .includes(`chrome-extension://${metamaskExtensionId}/home.html`)
-      ) {
-        metamaskWindow = page;
-      } else if (
-        page
-          .url()
-          .includes(
-            `chrome-extension://${metamaskExtensionId}/notification.html`,
-          )
-      ) {
-        metamaskNotificationWindow = page;
-      } else if (
-        page
-          .url()
-          .includes(`chrome-extension://${metamaskExtensionId}/popup.html`)
-      ) {
-        metamaskPopupWindow = page;
+      if (!browser || !browser.contexts() || browser.contexts().length === 0) {
+        log('[assignWindows] ERROR: Browser or contexts not available');
+        throw new Error('Browser or contexts not available');
       }
+
+      let pages = await browser.contexts()[0].pages();
+      log(`[assignWindows] Found ${pages.length} pages in browser context`);
+      
+      // Log all page URLs for debugging
+      for (let i = 0; i < pages.length; i++) {
+        try {
+          const url = pages[i].url();
+          log(`[assignWindows] Page ${i}: ${url}`);
+        } catch (error) {
+          log(`[assignWindows] Page ${i}: Error getting URL - ${error.message}`);
+        }
+      }
+
+      let mainWindowAssigned = false;
+      let metamaskWindowAssigned = false;
+      let metamaskNotificationWindowAssigned = false;
+      let metamaskPopupWindowAssigned = false;
+
+      for (const page of pages) {
+        try {
+          const pageUrl = page.url();
+          
+          if (pageUrl.includes('specs/runner')) {
+            mainWindow = page;
+            mainWindowAssigned = true;
+            log(`[assignWindows] Main window assigned: ${pageUrl}`);
+          } else if (
+            pageUrl.includes(`chrome-extension://${metamaskExtensionId}/home.html`)
+          ) {
+            metamaskWindow = page;
+            metamaskWindowAssigned = true;
+            log(`[assignWindows] MetaMask window assigned: ${pageUrl}`);
+          } else if (
+            pageUrl.includes(
+              `chrome-extension://${metamaskExtensionId}/notification.html`,
+            )
+          ) {
+            metamaskNotificationWindow = page;
+            metamaskNotificationWindowAssigned = true;
+            log(`[assignWindows] MetaMask notification window assigned: ${pageUrl}`);
+          } else if (
+            pageUrl.includes(`chrome-extension://${metamaskExtensionId}/popup.html`)
+          ) {
+            metamaskPopupWindow = page;
+            metamaskPopupWindowAssigned = true;
+            log(`[assignWindows] MetaMask popup window assigned: ${pageUrl}`);
+          }
+        } catch (error) {
+          log(`[assignWindows] Error processing page: ${error.message}`);
+        }
+      }
+
+      // Log assignment results
+      log(`[assignWindows] Assignment results:`);
+      log(`[assignWindows] - Main window: ${mainWindowAssigned ? 'ASSIGNED' : 'NOT ASSIGNED'}`);
+      log(`[assignWindows] - MetaMask window: ${metamaskWindowAssigned ? 'ASSIGNED' : 'NOT ASSIGNED'}`);
+      log(`[assignWindows] - MetaMask notification window: ${metamaskNotificationWindowAssigned ? 'ASSIGNED' : 'NOT ASSIGNED'}`);
+      log(`[assignWindows] - MetaMask popup window: ${metamaskPopupWindowAssigned ? 'ASSIGNED' : 'NOT ASSIGNED'}`);
+
+      if (!metamaskWindowAssigned) {
+        log(`[assignWindows] WARNING: MetaMask window not found! Looking for: chrome-extension://${metamaskExtensionId}/home.html`);
+      }
+
+      return true;
+    } catch (error) {
+      log(`[assignWindows] ERROR: ${error.message}`);
+      log(`[assignWindows] ERROR stack: ${error.stack}`);
+      throw error;
     }
-    return true;
   },
   async assignActiveTabName(tabName) {
     activeTabName = tabName;
@@ -429,16 +497,41 @@ module.exports = {
   },
   // workaround for metamask random blank page on first run
   async fixBlankPage(page = metamaskWindow) {
-    await page.waitForTimeout(1000);
-    for (let times = 0; times < 5; times++) {
-      if (
-        (await page.locator(onboardingWelcomePageElements.app).count()) === 0
-      ) {
-        await page.reload();
-        await module.exports.waitUntilMetamaskWindowIsStable();
-      } else {
-        break;
+    log('[fixBlankPage] Starting fixBlankPage...');
+    log(`[fixBlankPage] Page parameter: ${page ? 'PROVIDED' : 'UNDEFINED'}`);
+    log(`[fixBlankPage] metamaskWindow: ${metamaskWindow ? 'AVAILABLE' : 'UNDEFINED'}`);
+    
+    if (!page) {
+      log('[fixBlankPage] ERROR: Page is undefined! Cannot proceed.');
+      throw new Error('[fixBlankPage] Page is undefined - metamaskWindow was not properly assigned');
+    }
+    
+    try {
+      log(`[fixBlankPage] Page URL: ${page.url()}`);
+      log('[fixBlankPage] Waiting 1 second...');
+      await page.waitForTimeout(1000);
+      
+      for (let times = 0; times < 5; times++) {
+        log(`[fixBlankPage] Attempt ${times + 1}/5: Checking for onboarding app...`);
+        
+        const appCount = await page.locator(onboardingWelcomePageElements.app).count();
+        log(`[fixBlankPage] Onboarding app count: ${appCount}`);
+        
+        if (appCount === 0) {
+          log(`[fixBlankPage] Blank page detected, reloading...`);
+          await page.reload();
+          await module.exports.waitUntilMetamaskWindowIsStable();
+        } else {
+          log(`[fixBlankPage] Page is not blank, continuing...`);
+          break;
+        }
       }
+      
+      log('[fixBlankPage] fixBlankPage completed successfully');
+    } catch (error) {
+      log(`[fixBlankPage] ERROR: ${error.message}`);
+      log(`[fixBlankPage] ERROR stack: ${error.stack}`);
+      throw error;
     }
   },
   async fixCriticalError(page = metamaskWindow) {

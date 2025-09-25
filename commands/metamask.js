@@ -1542,11 +1542,25 @@ const metamask = {
     } else {
       await playwright.init();
     }
+    log('[initialSetup] Starting window assignment...');
     await playwright.assignWindows();
+    log('[initialSetup] Window assignment completed');
+    
+    log('[initialSetup] Setting active tab name to metamask...');
     await playwright.assignActiveTabName('metamask');
+    log('[initialSetup] Active tab name set');
+    
+    log('[initialSetup] Getting extension details...');
     await module.exports.getExtensionDetails();
+    log('[initialSetup] Extension details retrieved');
+    
+    log('[initialSetup] Calling fixBlankPage...');
     await playwright.fixBlankPage();
+    log('[initialSetup] fixBlankPage completed');
+    
+    log('[initialSetup] Calling fixCriticalError...');
     await playwright.fixCriticalError();
+    log('[initialSetup] fixCriticalError completed');
     if (
       (await playwright
         .metamaskWindow()
