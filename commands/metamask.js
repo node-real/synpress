@@ -1577,9 +1577,10 @@ const metamask = {
     } else {
       log('[initialSetup] WARNING: metamaskWindow is not available, skipping fixCriticalError');
     }
-    if (
-      (await playwright
-        .metamaskWindow()
+    // Check if metamaskWindow is available before calling locator
+    const metamaskWindowForOnboarding = await playwright.metamaskWindow();
+    if (metamaskWindowForOnboarding && 
+      (await metamaskWindowForOnboarding
         .locator(onboardingWelcomePageElements.onboardingWelcomePage)
         .count()) > 0
     ) {
@@ -1603,9 +1604,14 @@ const metamask = {
       walletAddress = await module.exports.getWalletAddress();
       await playwright.switchToCypressWindow();
       return true;
-    } else if (
-      (await playwright
-        .metamaskWindow()
+    } else {
+      log('[initialSetup] WARNING: metamaskWindow is not available, skipping onboarding check');
+    }
+    
+    // Check if metamaskWindow is available for unlock check
+    const metamaskWindowForUnlock = await playwright.metamaskWindow();
+    if (metamaskWindowForUnlock && 
+      (await metamaskWindowForUnlock
         .locator(unlockPageElements.passwordInput)
         .count()) > 0
     ) {
@@ -1614,9 +1620,10 @@ const metamask = {
       await playwright.switchToCypressWindow();
       return true;
     } else {
-      if (
-        (await playwright
-          .metamaskWindow()
+      // Check if metamaskWindow is available for wallet overview check
+      const metamaskWindowForOverview = await playwright.metamaskWindow();
+      if (metamaskWindowForOverview && 
+        (await metamaskWindowForOverview
           .locator(mainPageElements.walletOverview)
           .count()) > 0 &&
         !process.env.RESET_METAMASK
@@ -1718,17 +1725,25 @@ async function activateAdvancedSetting(
       await metamask.goToAdvancedSettings();
     }
   }
-  if ((await playwright.metamaskWindow().locator(toggleOn).count()) === 0) {
+  // Check if metamaskWindow is available before checking toggle
+  const metamaskWindowForToggle = await playwright.metamaskWindow();
+  if (metamaskWindowForToggle && (await metamaskWindowForToggle.locator(toggleOn).count()) === 0) {
     await playwright.waitAndClick(toggleOff);
   }
   if (!skipSetup) {
-    await playwright.waitAndClick(
-      settingsPageElements.closeButton,
-      await playwright.metamaskWindow(),
-      {
-        waitForEvent: 'navi',
-      },
-    );
+    // Check if metamaskWindow is available before clicking close button
+    const metamaskWindowForClose = await playwright.metamaskWindow();
+    if (metamaskWindowForClose) {
+      await playwright.waitAndClick(
+        settingsPageElements.closeButton,
+        metamaskWindowForClose,
+        {
+          waitForEvent: 'navi',
+        },
+      );
+    } else {
+      log('[setupSettings] WARNING: metamaskWindow is not available, skipping close button click');
+    }
     await metamask.closePopupAndTooltips();
     await switchToCypressIfNotActive();
   }
