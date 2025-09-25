@@ -160,6 +160,73 @@ module.exports = {
           log(`[assignWindows] Page ${i}: Error getting URL - ${error.message}`);
         }
       }
+      
+      // 检查是否有MetaMask扩展页面
+      const hasMetamaskPage = pages.some(page => {
+        try {
+          return page.url().includes(`chrome-extension://${metamaskExtensionId}`);
+        } catch (e) {
+          return false;
+        }
+      });
+      
+      if (!hasMetamaskPage) {
+        log('[assignWindows] No MetaMask pages found, attempting to open MetaMask extension...');
+        try {
+          // 尝试打开MetaMask扩展页面
+          const metamaskPage = await browser.contexts()[0].newPage();
+          await metamaskPage.goto(`chrome-extension://${metamaskExtensionId}/home.html`);
+          log('[assignWindows] MetaMask extension page opened successfully');
+          
+          // 重新获取页面列表
+          pages = await browser.contexts()[0].pages();
+          log(`[assignWindows] After opening MetaMask, found ${pages.length} pages in browser context`);
+          
+          // 重新记录所有页面URL
+          for (let i = 0; i < pages.length; i++) {
+            try {
+              const url = pages[i].url();
+              log(`[assignWindows] New Page ${i}: ${url}`);
+            } catch (error) {
+              log(`[assignWindows] New Page ${i}: Error getting URL - ${error.message}`);
+            }
+          }
+        } catch (error) {
+          log(`[assignWindows] Failed to open MetaMask extension: ${error.message}`);
+          
+          // 备选方案：尝试通过chrome://extensions/页面访问MetaMask
+          try {
+            log('[assignWindows] Trying alternative approach via chrome://extensions/...');
+            const extensionsPage = await browser.contexts()[0].newPage();
+            await extensionsPage.goto('chrome://extensions/');
+            log('[assignWindows] Opened chrome://extensions/ page');
+            
+            // 等待一下让页面加载
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // 重新获取页面列表
+            pages = await browser.contexts()[0].pages();
+            log(`[assignWindows] After opening extensions page, found ${pages.length} pages in browser context`);
+            
+            // 再次检查是否有MetaMask页面
+            const hasMetamaskPageAfterExtensions = pages.some(page => {
+              try {
+                return page.url().includes(`chrome-extension://${metamaskExtensionId}`);
+              } catch (e) {
+                return false;
+              }
+            });
+            
+            if (hasMetamaskPageAfterExtensions) {
+              log('[assignWindows] MetaMask pages found after opening extensions page');
+            } else {
+              log('[assignWindows] Still no MetaMask pages found after opening extensions page');
+            }
+          } catch (extensionsError) {
+            log(`[assignWindows] Failed to open chrome://extensions/: ${extensionsError.message}`);
+          }
+        }
+      }
 
       let mainWindowAssigned = false;
       let metamaskWindowAssigned = false;
