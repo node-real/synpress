@@ -254,9 +254,9 @@ example, to change path for `support.js` file, you can use
 If you would like to use custom paths for your tests and configs, you should
 [mirror (full) default synpress config](https://github.com/Synthetixio/synpress/blob/dev/synpress.config.js)
 and then modify it for your needs. Then you can direct synpress to use it with
-`--configFile` flag.
+`--config-file` flag.
 
-For example: `synpress run --configFile __tests__/e2e/customConfig.config.js`
+For example: `synpress run --config-file __tests__/e2e/customConfig.config.js`
 
 ## ⚡ Important notes
 
@@ -460,7 +460,7 @@ launch tests
 Options:
   -b, --browser <name>               run on specified browser (default: "chrome")
   -c, --config <config>              set configuration values, separate multiple values with a comma
-  -cf, --configFile <path>          specify a path to *.js file where configuration values are set
+  -cf, --config-file <path>          specify a path to *.js file where configuration values are set
   -e, --env <env=val>                set environment variables, separate multiple values with comma
   -s, --spec <path or glob>          run only provided spec files
   -ne, --noExit                     keep runner open after tests finish
@@ -482,7 +482,7 @@ Usage: synpress open [options]
 launch test runner UI
 
 Options:
-  -cf, --configFile <path>  specify a path to *.js file where configuration values are set
+  -cf, --config-file <path>  specify a path to *.js file where configuration values are set
   -h, --help                display help for command
 ```
 

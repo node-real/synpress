@@ -81,7 +81,7 @@ program
     'set configuration values, separate multiple values with a comma',
   )
   .option(
-    '-cf, --configFile <path>',
+    '-cf, --config-file <path>',
     'specify a path to a JSON file where configuration values are set',
   )
   .option('--e2e', 'run e2e tests (already set as default)')
@@ -145,7 +145,7 @@ program
   .command('open')
   .description('launch test runner UI')
   .option(
-    '-cf, --configFile <path>',
+    '-cf, --config-file <path>',
     'specify a path to a JSON file where configuration values are set',
   )
   .action(options => {
