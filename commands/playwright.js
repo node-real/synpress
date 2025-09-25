@@ -46,6 +46,10 @@ module.exports = {
     return mainWindow;
   },
   metamaskWindow() {
+    log(`[metamaskWindow] Returning metamaskWindow: ${metamaskWindow ? 'defined' : 'undefined'}`);
+    if (metamaskWindow) {
+      log(`[metamaskWindow] metamaskWindow URL: ${metamaskWindow.url()}`);
+    }
     return metamaskWindow;
   },
   metamaskNotificationWindow() {
@@ -173,9 +177,14 @@ module.exports = {
           } else if (
             pageUrl.includes(`chrome-extension://${metamaskExtensionId}/home.html`)
           ) {
-            metamaskWindow = page;
-            metamaskWindowAssigned = true;
-            log(`[assignWindows] MetaMask window assigned: ${pageUrl}`);
+            // 优先选择onboarding页面，如果没有onboarding则选择普通home页面
+            if (pageUrl.includes('#onboarding') || !metamaskWindowAssigned) {
+              metamaskWindow = page;
+              metamaskWindowAssigned = true;
+              log(`[assignWindows] MetaMask window assigned: ${pageUrl}`);
+            } else {
+              log(`[assignWindows] MetaMask window already assigned, skipping: ${pageUrl}`);
+            }
           } else if (
             pageUrl.includes(
               `chrome-extension://${metamaskExtensionId}/notification.html`,
@@ -205,6 +214,12 @@ module.exports = {
 
       if (!metamaskWindowAssigned) {
         log(`[assignWindows] WARNING: MetaMask window not found! Looking for: chrome-extension://${metamaskExtensionId}/home.html`);
+      }
+
+      // 最终检查
+      log(`[assignWindows] Final metamaskWindow status: ${metamaskWindow ? 'ASSIGNED' : 'NOT ASSIGNED'}`);
+      if (metamaskWindow) {
+        log(`[assignWindows] Final metamaskWindow URL: ${metamaskWindow.url()}`);
       }
 
       return true;
