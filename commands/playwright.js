@@ -58,8 +58,18 @@ module.exports = {
     return activeTabName;
   },
   async metamaskExtensionId() {
-    const metamaskExtensionData = (await module.exports.getExtensionsData())
-      .metamask;
+    const allExtensionsData = await module.exports.getExtensionsData();
+    const metamaskExtensionData = allExtensionsData.metamask;
+    
+    // #region agent log
+    if (!metamaskExtensionData) {
+      log('[metamaskExtensionId] ERROR: metamask extension not found! Available extensions:', Object.keys(allExtensionsData));
+      throw new Error(
+        `[metamaskExtensionId] MetaMask extension not found in chrome://extensions. Available extensions: ${JSON.stringify(Object.keys(allExtensionsData))}. Full data: ${JSON.stringify(allExtensionsData)}`
+      );
+    }
+    // #endregion
+    
     return metamaskExtensionData.id;
   },
   async setExpectInstance(expect) {
@@ -469,6 +479,10 @@ module.exports = {
     await devModeButton.click();
 
     const extensionDataItems = await page.locator('extensions-item').all();
+    // #region agent log
+    log('[getExtensionsData] Found extensions-item count:', extensionDataItems.length);
+    // #endregion
+
     for (const extensionData of extensionDataItems) {
       const extensionName = (
         await extensionData
@@ -488,11 +502,31 @@ module.exports = {
         await extensionData.locator('#extension-id').textContent()
       ).split(': ')[1];
 
+      // #region agent log
+      log('[getExtensionsData] Found extension:', extensionName, 'version:', extensionVersion, 'id:', extensionId);
+      // #endregion
+
       extensionsData[extensionName] = {
         version: extensionVersion,
         id: extensionId,
       };
+
+      // Also add "metamask" key if extension name contains "metamask"
+      if (extensionName.includes('metamask') && !extensionsData.metamask) {
+        extensionsData.metamask = {
+          version: extensionVersion,
+          id: extensionId,
+        };
+        // #region agent log
+        log('[getExtensionsData] Added metamask alias for:', extensionName);
+        // #endregion
+      }
     }
+
+    // #region agent log
+    log('[getExtensionsData] Final extensionsData keys:', Object.keys(extensionsData));
+    // #endregion
+
     await page.close();
 
     return extensionsData;

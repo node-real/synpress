@@ -208,7 +208,13 @@ module.exports = {
           extract: true,
         });
       }
+      // #region agent log
+      log(`[download] Successfully downloaded and extracted to: ${destination}`);
+      // #endregion
     } catch (e) {
+      // #region agent log
+      log(`[download] FAILED to download from: ${url}, error: ${e.message}`);
+      // #endregion
       throw new Error(
         `[download] Unable to download metamask release from: ${url} to: ${destination} with following error:\n${e}`,
       );
@@ -224,6 +230,10 @@ module.exports = {
       downloadsDirectory = path.resolve(__dirname, 'downloads');
     }
 
+    // #region agent log
+    log(`[prepareMetamask] Platform: ${os.platform()}, downloadsDirectory: ${downloadsDirectory}`);
+    // #endregion
+
     await module.exports.createDirIfNotExist(downloadsDirectory);
     const metamaskDirectory = path.join(downloadsDirectory, release.tagName);
     const metamaskDirectoryExists =
@@ -236,11 +246,21 @@ module.exports = {
     const metamaskManifestFileExists = await module.exports.checkDirOrFileExist(
       metamaskManifestFilePath,
     );
+
+    // #region agent log
+    log(`[prepareMetamask] metamaskDirectory: ${metamaskDirectory}, exists: ${metamaskDirectoryExists}, manifestExists: ${metamaskManifestFileExists}`);
+    // #endregion
+
     if (!metamaskDirectoryExists && !metamaskManifestFileExists) {
       await module.exports.download(release.downloadUrl, metamaskDirectory);
     } else {
       log('Metamask is already downloaded');
     }
+
+    // #region agent log
+    log(`[prepareMetamask] Returning metamaskDirectory: ${metamaskDirectory}`);
+    // #endregion
+
     return metamaskDirectory;
   },
 };
